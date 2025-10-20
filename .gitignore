@@ -1,0 +1,18 @@
+# Environnements virtuels
+venv/
+.env
+.config/
+
+# Fichiers PyCharm ou VSCode
+*.iml
+.vscode/
+.idea/
+
+# Fichiers compilés / caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
