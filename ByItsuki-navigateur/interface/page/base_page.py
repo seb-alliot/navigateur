@@ -26,7 +26,9 @@ class BasePage(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"{os.getenv('APP_NAME')}")
-        self.resize(800, 500)
+        self.resize(1024, 768)
+
+
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
