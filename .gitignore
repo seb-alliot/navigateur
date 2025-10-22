@@ -1,63 +1,37 @@
-# ===============================
 # Environnements virtuels
-# ===============================
 venv/
 .env/
 .venv/
 
-# ===============================
-# IDEs (PyCharm, VSCode, etc.)
-# ===============================
+# IDE
 .vscode/
 .idea/
 *.iml
 
-# ===============================
-# Python - fichiers compilés
-# ===============================
+# Fichiers Python compilés
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 
-# ===============================
 # Logs
-# ===============================
 *.log
 
-# ===============================
-# PyInstaller / build
-# ===============================
+# Dossiers générés par PyInstaller
 build/
 dist/
 *.spec
 
-# ===============================
-# Fichiers volumineux Qt / binaires
-# ===============================
+# Fichiers binaires lourds
 *.dll
 *.pak
-*.exe
 *.pkg
+*.exe
 
-# ===============================
-# Dossiers internes inutiles
-# ===============================
-__MACOSX/
-Thumbs.db
-.DS_Store
-
-# ===============================
 # Configurations locales
-# ===============================
 .config/
 
-# ===============================
-# Données locales de navigation (cache, stockage...)
-# ===============================
+# Cache navigateur local
 configuration/data_navigation/cache/
 configuration/data_navigation/storage/
-
-# Tu peux garder ce dossier pour les scripts de config :
-# (ne pas le supprimer complètement)
-# configuration/data_navigation/  <-- gardé
+configuration/data_navigation/Local\ Storage/
