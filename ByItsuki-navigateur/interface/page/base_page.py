@@ -1,23 +1,24 @@
-# interface/page/base_page.py
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PyQt6.QtCore import Qt
 import os
 
-# Chargement des variables d’environnement
-load_dotenv(dotenv_path=".config")
-
 # Gestion du chemin projet
-project_root = Path(__file__).resolve().parent.parent.parent
-if str(project_root) not in sys.path:
-    sys.path.append(str(project_root))
+if getattr(sys, 'frozen', False):  # .exe
+    base_path = Path(sys._MEIPASS)
+else:
+    base_path = Path(__file__).resolve().parent.parent.parent.parent
 
-icon_path = project_root / "interface" / "img" / "asset" / "icons"
+# Chemin vers le fichier de configuration
+config_path = base_path / "configuration" / ".config"
 
-from interface.responsive import create_button, create_input
+# Chargement des variables d'environnement
+load_dotenv(dotenv_path=config_path)
+
+# Chemin vers les icônes
+icon_path = base_path / "interface" / "img" / "asset" / "icons"
 
 
 class BasePage(QWidget):
@@ -25,10 +26,8 @@ class BasePage(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"{os.getenv('APP_NAME')}")
+        self.setWindowTitle(f"{os.getenv('APP_NAME', 'ByItsuki-Navigateur')}")
         self.resize(1024, 768)
-
-
 
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
