@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt
 import os
 
 # Gestion du chemin projet
-if getattr(sys, 'frozen', False):  # .exe
+if getattr(sys, 'frozen', False):
     base_path = Path(sys._MEIPASS)
 else:
     base_path = Path(__file__).resolve().parent.parent.parent.parent
@@ -17,8 +17,6 @@ config_path = base_path / "configuration" / ".config"
 # Chargement des variables d'environnement
 load_dotenv(dotenv_path=config_path)
 
-# Chemin vers les icônes
-icon_path = base_path / "interface" / "img" / "asset" / "icons"
 
 
 class BasePage(QWidget):
