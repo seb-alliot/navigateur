@@ -1,10 +1,10 @@
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QVBoxLayout
 )
 
 
-from PyQt6.QtCore import Qt
+from PySide6.QtCore import Qt
 from interface.responsive import create_button, create_input
 
 

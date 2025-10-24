@@ -1,8 +1,8 @@
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
-from PyQt6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
+from PySide6.QtCore import Qt
 import os
 
 # Gestion du chemin projet

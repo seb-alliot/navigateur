@@ -8,28 +8,28 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 icon_root = project_root / "interface" / "img" / "asset" / "icons"
 
-from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QSizePolicy, QTabWidget
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWebEngineWidgets import QWebEngineView
-from PyQt6.QtWebEngineCore import QWebEngineProfile
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QSizePolicy, QTabWidget, QComboBox
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineProfile
+
 
 from interface.page.base_page import BasePage
 from interface.page.parametre.menu_parametre import Menu_parametre
 from interface.code.recherche.recherche import research
-from interface.responsive import create_button, create_input , create_tab
+from interface.responsive import create_button, create_input , create_tab, create_select
 from utils.root_icon import resource_path
 from utils.profil_search import create_profile
 
 class Principal(BasePage):
     def __init__(self):
         super().__init__()
-
         # --- Profil pour les pages Web ---
         self.profile = create_profile(self)
 
-        self.init_interface()
 
+        self.init_interface()
 
     def init_interface(self):
 
@@ -48,7 +48,14 @@ class Principal(BasePage):
         self.reload_button.clicked.connect(self.reload)
         address_layout.addWidget(self.reload_button)
 
-        self.url_search = create_input("Barre de recherche...", self.search, 500, None, 40, 40)
+        self.start = create_button("🏠", self.go_home, 40, 40, 40, 40, "Page d'accueil")
+        self.start.clicked.connect(self.go_home)
+        address_layout.addWidget(self.start)
+
+        self.choice_moteur = create_select(["Google", "Bing", "DuckDuckGo", "Qwant"], 0, 100, 40, "Choisir le moteur de recherche")
+        address_layout.addWidget(self.choice_moteur)
+
+        self.url_search = create_input("Barre de recherche...", self.search, 500, None, 40, 40, "Entrer votre recherche ou URL ici")
 
         address_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         address_layout.addWidget(self.url_search)
@@ -84,52 +91,75 @@ class Principal(BasePage):
         self.tab.setCurrentWidget(self.home_tab)
         self.home_tab.web_view.titleChanged.connect(lambda title: self.tab.setTabText(0, title[:30] if self.url_search.text().strip() != "" else "Accueil"))
 
-    # Navigation des onglets
+        # Charger la page d'accueil par défaut
+        self.go_home()
+
+    # Navigation dans les onglets
     def back(self):
         use_tab = self.tab.currentWidget()
         if use_tab and hasattr(use_tab, "web_view"):
             use_tab.web_view.back()
+
     def forward(self):
         use_tab = self.tab.currentWidget()
         if use_tab and hasattr(use_tab, "web_view"):
             use_tab.web_view.forward()
+
     def reload(self):
         use_tab = self.tab.currentWidget()
         if use_tab and hasattr(use_tab, "web_view"):
             use_tab.web_view.reload()
 
+    # Menu des paramètres
     def menu_parametre(self):
         self.param_menu = Menu_parametre()
         self.param_menu.show()
 
-
+    # Ajouter un nouvel onglet
     def new_tab(self):
         self.news_tab = create_tab(self, profile=self.profile)
         # Ajouter un nouvel onglet
         index = self.tab.addTab(self.news_tab, self.news_tab.title)
         self.tab.setCurrentWidget(self.news_tab)
         self.url_search.setText("")
-        # Mettre à jour le titre de l’onglet lors du changement de page
+        # Met à jour le titre de l’onglet lors du changement de page
         self.news_tab.web_view.titleChanged.connect(lambda title, i=index: self.tab.setTabText(i, title[:30] if self.url_search.text().strip() != "" else "Nouvel onglet"))
 
+    # met à jour la barre d'adresse lors du changement d'onglet
     def change_tab(self, index):
-        self.tab.setCurrentIndex(index)
-        self.url_search.setText(self.tab.currentWidget().web_view.url().toString())
+        current_tab = self.tab.widget(index)
+        if not current_tab or not hasattr(current_tab, "web_view"):
+            self.url_search.clear()
+            return
+        self.url_search.setText(current_tab.web_view.url().toString())
 
-    def search(self):
+    # --- Méthode interne commune ---
+    def base_page(self, query=None, moteur=None):
+        query = (query or "").strip()
+        moteur = moteur or self.choice_moteur.currentText().upper()
+        default = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
+
+        choix = moteur if moteur != default else default
+
         use_tab = self.tab.currentWidget()
         if not use_tab or not hasattr(use_tab, "web_view"):
-            return
+            self.new_tab()
+            use_tab = self.tab.currentWidget()
 
-        query = self.url_search.text().strip()
-        if not query:
-            return
-
-        url = research(self, query)
+        url = research(self, query, choix)
         if url:
             use_tab.web_view.load(url[0])
-            self.url_search.setText(url[0].toString())
+            if query:
+                self.url_search.setText(url[0].toString())
+            else:
+                self.url_search.setText(url[0].toString().split("?q=")[0])
 
+    def search(self):
+        self.base_page(self.url_search.text(), self.choice_moteur.currentText().upper())
+
+    def go_home(self):
+        moteur = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
+        self.base_page("", moteur)
 
 
 if __name__ == "__main__":

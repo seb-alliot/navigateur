@@ -1,4 +1,4 @@
-from PyQt6.QtWebEngineCore import QWebEnginePage, QWebEngineCertificateError
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineCertificateError
 
 class SilentWebEnginePage(QWebEnginePage):
     def __init__(self, profile, parent=None):
@@ -13,4 +13,7 @@ class SilentWebEnginePage(QWebEnginePage):
         resultCallback("")  # répond vide pour éviter le blocage
         return True  # empêche l’affichage
 
-
+    #  Ignore les erreurs SSL bloquantes (utile si certificat auto-signé)
+    def certificateError(self, error: QWebEngineCertificateError):
+        error.ignoreCertificateError()
+        return True
