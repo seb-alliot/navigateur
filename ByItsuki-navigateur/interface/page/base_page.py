@@ -31,9 +31,9 @@ class BasePage(QWidget):
         self.setLayout(self.layout)
         self.layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.header_layout = QHBoxLayout()
-        self.layout.addLayout(self.header_layout)
+
 
         # Contenu principal (à remplir par les classes filles)
         self.content_layout = QVBoxLayout()
         self.layout.addLayout(self.content_layout)
+

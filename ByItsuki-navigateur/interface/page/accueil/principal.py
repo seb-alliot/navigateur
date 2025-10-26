@@ -13,6 +13,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineProfile
+from PySide6.QtCore import QUrl
 
 
 from interface.page.base_page import BasePage
@@ -82,7 +83,7 @@ class Principal(BasePage):
         self.tab = QTabWidget()
         self.tab.setTabsClosable(True)
         self.tab.currentChanged.connect(self.change_tab)
-        self.tab.tabCloseRequested.connect(lambda index: self.tab.removeTab(index))
+        self.tab.tabCloseRequested.connect(self.close_tab)
         self.content_layout.addWidget(self.tab)
 
         # --- Onglet de base (Accueil) ---
@@ -94,16 +95,24 @@ class Principal(BasePage):
         # Charger la page d'accueil par défaut
         self.go_home()
 
+
+
+
     # Navigation dans les onglets
     def back(self):
-        use_tab = self.tab.currentWidget()
-        if use_tab and hasattr(use_tab, "web_view"):
-            use_tab.web_view.back()
+        tab = self.tab.currentWidget()
+        if tab and hasattr(tab, "web_view"):
+            if tab.web_view.history().canGoBack():  # Vérifie s'il y a une page précédente
+                tab.web_view.back()
+                self.url_search.setText(tab.web_view.url().toString())
 
     def forward(self):
-        use_tab = self.tab.currentWidget()
-        if use_tab and hasattr(use_tab, "web_view"):
-            use_tab.web_view.forward()
+        tab = self.tab.currentWidget()
+        if tab and hasattr(tab, "web_view"):
+            if tab.web_view.history().canGoForward():  # Vérifie s'il y a une page suivante
+                tab.web_view.forward()
+                self.url_search.setText(tab.web_view.url().toString())
+
 
     def reload(self):
         use_tab = self.tab.currentWidget()
@@ -117,13 +126,14 @@ class Principal(BasePage):
 
     # Ajouter un nouvel onglet
     def new_tab(self):
-        self.news_tab = create_tab(self, profile=self.profile)
+        self.news_tab = create_tab(self, self.profile)
         # Ajouter un nouvel onglet
         index = self.tab.addTab(self.news_tab, self.news_tab.title)
         self.tab.setCurrentWidget(self.news_tab)
-        self.url_search.setText("")
+        self.go_home()
         # Met à jour le titre de l’onglet lors du changement de page
         self.news_tab.web_view.titleChanged.connect(lambda title, i=index: self.tab.setTabText(i, title[:30] if self.url_search.text().strip() != "" else "Nouvel onglet"))
+
 
     # met à jour la barre d'adresse lors du changement d'onglet
     def change_tab(self, index):
@@ -154,13 +164,30 @@ class Principal(BasePage):
             else:
                 self.url_search.setText(url[0].toString().split("?q=")[0])
 
+    # Recherche via la barre d'adresse
     def search(self):
         self.base_page(self.url_search.text(), self.choice_moteur.currentText().upper())
-
+    # Page d'accueil par defaut par rapport au moteur par default
     def go_home(self):
         moteur = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
         self.base_page("", moteur)
 
+
+    def close_tab(self, index):
+        tab = self.tab.widget(index)
+        if hasattr(tab, "history_root"):
+            file_delete = tab.history_root / "history.json"
+            if file_delete.exists():
+                file_delete.unlink()
+        self.tab.removeTab(index)
+        tab.deleteLater()
+
+
+    def closeEvent(self, event):
+        # -1, -1, -1 est un écriture python , le premier -1 récupère l'élément de fin de liste quelque soit sa taille, et décrémente jusqu'à 0
+        for t in range(self.tab.count()-1, -1, -1):
+            self.close_tab(t)
+        event.accept()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
