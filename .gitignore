@@ -43,21 +43,20 @@ dist/
 # ===============================
 # Dossiers internes inutiles
 # ===============================
-__MACOSX/
 Thumbs.db
 .DS_Store
 
 # ===============================
 # Configurations locales
 # ===============================
-.config/
+
+# Si le fichier contiens des informations sensibles ou spécifiques à l'utilisateur
 
 # ===============================
 # Données locales de navigation (cache, stockage...)
 # ===============================
-configuration/data_navigation/cache/
-configuration/data_navigation/storage/
+# Données trop volumineuse pour github et non essentielle au projet
+configuration/data_navigation/
 
-# Tu peux garder ce dossier pour les scripts de config :
-# (ne pas le supprimer complètement)
-# configuration/data_navigation/  <-- gardé
+# ===============================
+# Futur fichier a ajouter ici
