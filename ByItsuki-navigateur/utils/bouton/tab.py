@@ -33,7 +33,7 @@ def create_tab(parent, profile, title="Nouvel onglet",
     moteur_str = os.getenv(moteur).split("search?q=")[0]
 
     accueil_entry = {
-        "index": 1,
+        "index": 0,
         "timestamp": datetime.now().isoformat(),
         "url": moteur_str,
         "title": "Accueil",

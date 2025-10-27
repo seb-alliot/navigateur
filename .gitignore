@@ -56,9 +56,8 @@ Thumbs.db
 # Données locales de navigation (cache, stockage...)
 # ===============================
 # Données trop volumineuse pour github et non essentielle au projet
-configuration/data_navigation/
-configuration/data_navigation/cache/
-configuration/data_navigation/storage/
+ByItsuki-navigateur/configuration
+
 
 # ===============================
 # Futur fichier a ajouter ici

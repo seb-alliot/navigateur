@@ -3,7 +3,7 @@ from PySide6.QtCore import Signal
 
 class SilentWebEnginePage(QWebEnginePage):
     linkClickedSignal = Signal(str)
-    
+
     def __init__(self, profile, parent=None):
         super().__init__(profile, parent)
 
