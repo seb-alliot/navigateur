@@ -57,6 +57,8 @@ Thumbs.db
 # ===============================
 # Données trop volumineuse pour github et non essentielle au projet
 configuration/data_navigation/
+configuration/data_navigation/cache/
+configuration/data_navigation/storage/
 
 # ===============================
 # Futur fichier a ajouter ici
