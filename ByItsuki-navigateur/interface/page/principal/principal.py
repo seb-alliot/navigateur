@@ -1,27 +1,34 @@
 import os
 import sys
+import json
 from pathlib import Path
-
 
 project_root = Path(__file__).resolve().parent.parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
-icon_root = project_root / "interface" / "img" / "asset" / "icons"
+
 
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QSizePolicy, QTabWidget, QComboBox
 from PySide6.QtGui import QIcon
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineProfile
-from PySide6.QtCore import QUrl
-
 
 from interface.page.base_page import BasePage
 from interface.page.parametre.menu_parametre import Menu_parametre
-from interface.code.recherche.recherche import research
-from interface.responsive import create_button, create_input , create_tab, create_select
-from utils.root_icon import resource_path
-from utils.profil_search import create_profile
+from interface.code import (
+    research,
+    close_tab_window,
+)
+
+from utils import (
+    create_button,
+    create_input,
+    create_tab,
+    create_select,
+    root_icon,
+    create_profile,
+)
 
 class Principal(BasePage):
     def __init__(self):
@@ -70,10 +77,10 @@ class Principal(BasePage):
         address_layout.addWidget(self.open_button)
 
         self.parameter_menu_button = create_button("", self.menu_parametre, 40, 40, 40, 40, "Paramètres")
-        icon_file = resource_path("interface/img/asset/icons/menu_logo.png")
+        icon_file = root_icon("menu_icon.png")
         self.parameter_menu_button.setIcon(QIcon(str(icon_file)))
         # la ligne en dessous est a commenter quand on compile en .exe
-        self.parameter_menu_button.setIcon(QIcon(str(icon_root / "menu_logo.png") if icon_root.exists() else icon_file))
+        self.parameter_menu_button.setIcon(QIcon(str(root_icon("menu_icon.png"))))
         self.parameter_menu_button.setIconSize(QSize(24, 24))
         address_layout.addWidget(self.parameter_menu_button)
 
@@ -86,6 +93,7 @@ class Principal(BasePage):
         self.tab.tabCloseRequested.connect(self.close_tab)
         self.content_layout.addWidget(self.tab)
 
+
         # --- Onglet de base (Accueil) ---
         self.home_tab = create_tab(self, profile=self.profile)
         self.tab.addTab(self.home_tab, "Accueil")
@@ -96,22 +104,54 @@ class Principal(BasePage):
         self.go_home()
 
 
-
-
-    # Navigation dans les onglets
     def back(self):
         tab = self.tab.currentWidget()
-        if tab and hasattr(tab, "web_view"):
-            if tab.web_view.history().canGoBack():  # Vérifie s'il y a une page précédente
-                tab.web_view.back()
-                self.url_search.setText(tab.web_view.url().toString())
+        if not tab or not hasattr(tab, "history_root"):
+            return
+
+        history_file = tab.history_root / "history.json"
+        if not history_file.exists():
+            self.go_home()
+            return
+
+        with open(history_file, "r", encoding="utf-8") as f:
+            history_data = json.load(f)
+
+        if tab.current_pos == 0:
+            # On est déjà au début de l'historique
+            self.go_home()
+            return
+        tab.current_pos = tab.current_pos
+        tab.current_pos -= 1
+        entry = history_data[tab.current_pos]
+
+        tab.web_view.load(QUrl(entry["url"]))
+        self.url_search.setText(entry["url"])
+
 
     def forward(self):
         tab = self.tab.currentWidget()
-        if tab and hasattr(tab, "web_view"):
-            if tab.web_view.history().canGoForward():  # Vérifie s'il y a une page suivante
-                tab.web_view.forward()
-                self.url_search.setText(tab.web_view.url().toString())
+        if not tab or not hasattr(tab, "history_root"):
+            return
+
+        history_file = tab.history_root / "history.json"
+        if not history_file.exists():
+            self.go_home()
+            return
+
+        with open(history_file, "r", encoding="utf-8") as f:
+            history_data = json.load(f)
+
+        if tab.current_pos == 0:
+            self.go_home()
+            return
+        tab.current_pos = tab.current_pos
+        tab.current_pos += 1
+        entry = history_data[tab.current_pos]
+
+        tab.web_view.load(QUrl(entry["url"]))
+        self.url_search.setText(entry["url"])
+
 
 
     def reload(self):
@@ -133,7 +173,6 @@ class Principal(BasePage):
         self.go_home()
         # Met à jour le titre de l’onglet lors du changement de page
         self.news_tab.web_view.titleChanged.connect(lambda title, i=index: self.tab.setTabText(i, title[:30] if self.url_search.text().strip() != "" else "Nouvel onglet"))
-
 
     # met à jour la barre d'adresse lors du changement d'onglet
     def change_tab(self, index):
@@ -167,26 +206,21 @@ class Principal(BasePage):
     # Recherche via la barre d'adresse
     def search(self):
         self.base_page(self.url_search.text(), self.choice_moteur.currentText().upper())
+
     # Page d'accueil par defaut par rapport au moteur par default
     def go_home(self):
         moteur = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
         self.base_page("", moteur)
 
-
+    # Fermer un onglet
     def close_tab(self, index):
         tab = self.tab.widget(index)
-        if hasattr(tab, "history_root"):
-            file_delete = tab.history_root / "history.json"
-            if file_delete.exists():
-                file_delete.unlink()
-        self.tab.removeTab(index)
-        tab.deleteLater()
+        close_tab_window(self.tab, index, tab)
 
-
+    # Tout fermer proprement
     def closeEvent(self, event):
-        # -1, -1, -1 est un écriture python , le premier -1 récupère l'élément de fin de liste quelque soit sa taille, et décrémente jusqu'à 0
-        for t in range(self.tab.count()-1, -1, -1):
-            self.close_tab(t)
+        while self.tab.count() > 0:
+            self.close_tab(0)
         event.accept()
 
 if __name__ == "__main__":

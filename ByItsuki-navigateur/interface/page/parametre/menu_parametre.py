@@ -5,7 +5,7 @@ from PySide6.QtWidgets import (
 
 
 from PySide6.QtCore import Qt
-from interface.responsive import create_button, create_input
+from utils import create_button
 
 
 class Menu_parametre(QWidget):

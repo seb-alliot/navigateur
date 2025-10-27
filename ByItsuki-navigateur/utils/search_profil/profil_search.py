@@ -13,11 +13,10 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
 
 
 def create_profile(parent=None, name="ByItsukiProfile"):
-    # Dossier de stockage
     if getattr(sys, "frozen", False):
         base = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
     else:
-        base = Path(__file__).resolve().parents[1] / "configuration" / "data_navigation"
+        base = Path(__file__).resolve().parents[3]  / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
 
     base.mkdir(parents=True, exist_ok=True)
 
@@ -41,6 +40,7 @@ def create_profile(parent=None, name="ByItsukiProfile"):
     settings.setAttribute(QWebEngineSettings.JavascriptCanOpenWindows, True)
     settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
 
+
     # Headers & user-agent
     profile.setHttpAcceptLanguage("fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7")
     profile.setHttpUserAgent(
@@ -49,5 +49,6 @@ def create_profile(parent=None, name="ByItsukiProfile"):
         "Chrome/129.0.0.0 Safari/537.36 "
         "ByItsuki-Navigateur/1.0"
     )
+
 
     return profile

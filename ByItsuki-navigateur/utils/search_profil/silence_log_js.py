@@ -1,6 +1,9 @@
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineCertificateError
+from PySide6.QtCore import Signal
 
 class SilentWebEnginePage(QWebEnginePage):
+    linkClickedSignal = Signal(str)
+    
     def __init__(self, profile, parent=None):
         super().__init__(profile, parent)
 
@@ -17,3 +20,9 @@ class SilentWebEnginePage(QWebEnginePage):
     def certificateError(self, error: QWebEngineCertificateError):
         error.ignoreCertificateError()
         return True
+
+    def acceptNavigationRequest(self, url, nav_type, isMainFrame):
+        if nav_type == QWebEnginePage.NavigationTypeLinkClicked:
+            url_str = url.toString()
+            self.linkClickedSignal.emit(url_str)
+        return super().acceptNavigationRequest(url, nav_type, isMainFrame)
