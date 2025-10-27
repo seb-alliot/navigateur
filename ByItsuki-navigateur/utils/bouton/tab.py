@@ -1,22 +1,16 @@
 from datetime import datetime
 import json
-from pathlib import Path
 import os
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QSizePolicy
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEnginePage
 from utils.search_profil.silence_log_js import SilentWebEnginePage
 
 from utils import (
     base_style,
     root_history,
 )
-
-
 def create_tab(parent, profile, title="Nouvel onglet",
                 min_width=800, max_width=None, min_height=600, max_height=None):
-    """Crée un nouvel onglet avec un QWebEngineView configuré."""
-
 
     #--- Chemin du répertoire d'historique ---
     history_root = root_history()
@@ -33,7 +27,6 @@ def create_tab(parent, profile, title="Nouvel onglet",
     moteur_str = os.getenv(moteur).split("search?q=")[0]
 
     accueil_entry = {
-        "index": 0,
         "timestamp": datetime.now().isoformat(),
         "url": moteur_str,
         "title": "Accueil",
@@ -76,7 +69,6 @@ def create_tab(parent, profile, title="Nouvel onglet",
     tab_widget.page = page
     tab_widget.page.linkClickedSignal.connect(lambda url: parent.url_search.setText(url))
 
-
     def on_link_clicked(url):
 
         # Historique par onglet
@@ -87,24 +79,22 @@ def create_tab(parent, profile, title="Nouvel onglet",
         else:
             history_tab = []
 
-        # indexation de l'historique
-        index = 2
-        for i in history_tab:
-            index = i["index"] + 1
-
         entry = {
-            "index": index,
             "timestamp": datetime.now().isoformat(),
             "url": url,
             "title": web_view.title(),
         }
 
-        history_tab.append(entry)
+        if tab_widget.current_pos == len(history_tab) - 1:
+            history_tab.append(entry)
+        else:
+            history_tab = history_tab[:tab_widget.current_pos + 1]
+            history_tab.append(entry)
+
         with open(history_file, "w", encoding="utf-8") as f:
             json.dump(history_tab, f, ensure_ascii=False, indent=2)
 
-        tab_widget.current_pos = len(history_tab)
-        print(f"Nouvelle position actuelle après clic: {tab_widget.current_pos}")
+        tab_widget.current_pos = len(history_tab) - 1
         # Historique général
         history_general_file = history_general / "history_general.json"
         if history_general_file.exists():
@@ -117,10 +107,8 @@ def create_tab(parent, profile, title="Nouvel onglet",
         with open(history_general_file, "w", encoding="utf-8") as f:
             json.dump(general_history, f, ensure_ascii=False, indent=2)
 
-
     page.linkClickedSignal.connect(on_link_clicked)
     tab_widget.on_link_clicked = on_link_clicked
-
 
     layout.addWidget(web_view)
     return tab_widget

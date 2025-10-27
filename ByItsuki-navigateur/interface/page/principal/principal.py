@@ -46,11 +46,9 @@ class Principal(BasePage):
         address_layout = QHBoxLayout()
 
         self.button_back = create_button("←", self.back, 40, 40, 40, 40, "Retourner à la page précédente")
-        self.button_back.clicked.connect(self.back)
         address_layout.addWidget(self.button_back)
 
         self.button_forward = create_button("→", self.forward, 40, 40, 40, 40, "Aller à la page suivante")
-        self.button_forward.clicked.connect(self.forward)
         address_layout.addWidget(self.button_forward)
 
         self.reload_button = create_button("⟳", self.reload, 40, 40, 40, 40, "Recharger la page")
@@ -108,28 +106,13 @@ class Principal(BasePage):
     def back(self):
         tab = self.tab.currentWidget()
         if not tab or not hasattr(tab, "history_root"):
-            return
-
+                return
         history_file = tab.history_root / "history.json"
         if not history_file.exists():
             self.go_home()
             return
-
-        with open(history_file, "r", encoding="utf-8") as f:
-            history_data = json.load(f)
-
-        if tab.current_pos == 0:
-            # On est déjà au début de l'historique
-            self.go_home()
-            return
-        tab.current_pos = tab.current_pos
-        tab.current_pos -= 1
-        entry = history_data[tab.current_pos]
-
-        tab.web_view.load(QUrl(entry["url"]))
-        self.url_search.setText(entry["url"])
-
-
+        print(f"Position actuelle avant retour: {tab.current_pos}, ne sert que d'information")
+        go_back(tab, history_file, self.url_search, tab.current_pos)
 
     def forward(self):
         tab = self.tab.currentWidget()
@@ -156,6 +139,8 @@ class Principal(BasePage):
         tab.web_view.load(QUrl(entry["url"]))
         self.url_search.setText(entry["url"])
 
+
+    
 
 
 
