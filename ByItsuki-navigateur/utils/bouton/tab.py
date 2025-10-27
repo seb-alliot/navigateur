@@ -104,6 +104,7 @@ def create_tab(parent, profile, title="Nouvel onglet",
             json.dump(history_tab, f, ensure_ascii=False, indent=2)
 
         tab_widget.current_pos = len(history_tab)
+        print(f"Nouvelle position actuelle après clic: {tab_widget.current_pos}")
         # Historique général
         history_general_file = history_general / "history_general.json"
         if history_general_file.exists():
@@ -118,6 +119,7 @@ def create_tab(parent, profile, title="Nouvel onglet",
 
 
     page.linkClickedSignal.connect(on_link_clicked)
+    tab_widget.on_link_clicked = on_link_clicked
 
 
     layout.addWidget(web_view)

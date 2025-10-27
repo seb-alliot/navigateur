@@ -19,6 +19,7 @@ from interface.page.parametre.menu_parametre import Menu_parametre
 from interface.code import (
     research,
     close_tab_window,
+    go_back,
 )
 
 from utils import (
@@ -107,26 +108,14 @@ class Principal(BasePage):
     def back(self):
         tab = self.tab.currentWidget()
         if not tab or not hasattr(tab, "history_root"):
-            return
-
+                return
         history_file = tab.history_root / "history.json"
         if not history_file.exists():
             self.go_home()
             return
+        print(f"Position actuelle avant retour: {tab.current_pos}, ne sert que d'information")
+        go_back(tab, history_file, self.url_search, tab.current_pos)
 
-        with open(history_file, "r", encoding="utf-8") as f:
-            history_data = json.load(f)
-
-        if tab.current_pos == 0:
-            # On est déjà au début de l'historique
-            self.go_home()
-            return
-        tab.current_pos = tab.current_pos
-        tab.current_pos -= 1
-        entry = history_data[tab.current_pos]
-
-        tab.web_view.load(QUrl(entry["url"]))
-        self.url_search.setText(entry["url"])
 
 
     def forward(self):
@@ -142,15 +131,20 @@ class Principal(BasePage):
         with open(history_file, "r", encoding="utf-8") as f:
             history_data = json.load(f)
 
-        if tab.current_pos == 0:
-            self.go_home()
+        # Vérifie qu'on peut avancer
+        if tab.current_pos + 1 >= len(history_data):
+            print("Déjà à la fin de l'historique, impossible d'avancer.")
             return
-        tab.current_pos = tab.current_pos
+
         tab.current_pos += 1
         entry = history_data[tab.current_pos]
+        print(f"Avancer vers l'entrée d'index: {tab.current_pos}, URL: {entry['url']}")
 
         tab.web_view.load(QUrl(entry["url"]))
         self.url_search.setText(entry["url"])
+
+
+
 
 
 
