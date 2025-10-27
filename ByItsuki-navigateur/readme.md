@@ -2,12 +2,12 @@
 
 ## Useful links:
 
-<!-- python --> ==> https://www.python.org/downloads/
-<!-- PySid6 --> ==> https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/index.html
-<!-- trello --> ==> https://trello.com/invite/b/68ff227bb886545dbb60d6f7/ATTI2b2f3b86624d3ffd359c1ab95d13b7f98E33DA0E/navigateur
-<!-- github --> ==> https://github.com/seb-alliot/navigateur.git
+## python ==> https://www.python.org/downloads/
+## PySid6 ==> https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/index.html
+## trello ==> https://trello.com/invite/b/68ff227bb886545dbb60d6f7/ATTI2b2f3b86624d3ffd359c1ab95d13b7f98E33DA0E/navigateur
+## github ==> https://github.com/seb-alliot/navigateur.git
 
-<!-- Technologies: Python 3.13, PySide6 -->
+## Technologies: Python 3.13, PySide6
 
 This project is a minimal web browser currently under development. The interface is the main focus for now, while a custom search engine will be implemented later.
 
@@ -24,12 +24,13 @@ Dependencies are added gradually as the project progresses.
 
 Use the requirements.txt file to install the necessary modules:
 
-==> <!-- pip install -r requirements.txt in console -->
+==>
+## pip install -r requirements.txt in console
 
 or :
 
-==> <!-- pyinstaller --onefile --noconsole navigateur.spec -->
-
+==>
+## pyinstaller --onefile --noconsole navigateur.spec
 
 
 ## Known Issues
