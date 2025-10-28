@@ -12,19 +12,15 @@ else:
     print(base_path)
 
 
-# Chemin vers le fichier de configuration
 config_path = base_path / "configuration" / ".config"
 
-# Chargement des variables d'environnement
 load_dotenv(dotenv_path=config_path)
 
 def research(self, query, choix):
     query = query
 
-    # On récupère l’URL de base du moteur choisi
     moteur = os.getenv(choix)
 
-    # On construit l’URL finale
     if query:
         url = QUrl(f"{moteur}{query}")
     else:

@@ -141,9 +141,13 @@ class CreateElements(QWidget):
             if data:
                 tab_widget.current_pos = data["current_pos"]
                 tab_widget.history_tab = data["history_tab"]
+                url = data["url"]
+                if hasattr(parent, "url_search"):
+                    parent.url_search.setText(data["url"])
+
         page.linkClickedSignal.connect(on_link_clicked)
         tab_widget.on_link_clicked = on_link_clicked
-        
+
 
         # --- Icône d’onglet ---
         def update_tab_icon(icon):

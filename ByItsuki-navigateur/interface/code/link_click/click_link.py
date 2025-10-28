@@ -47,6 +47,7 @@ def click_link(url, tab_index, web_view_title , history_general, current_pos):
             json.dump(general_history, f, ensure_ascii=False, indent=2)
         data = {
             "current_pos": current_pos,
-            "history_tab": history_tab
+            "history_tab": history_tab,
+            "url": entry["url"],
         }
         return data

@@ -10,4 +10,3 @@ from .link_click.click_link import click_link
 
 
 # history
-from .navigation.history.tab_history import TabHistory

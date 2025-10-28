@@ -160,7 +160,6 @@ class Principal(BasePage):
                 self.url_search.setText(url[0].toString())
             else:
                 self.url_search.setText(url[0].toString().split("?q=")[0])
-        
 
     # Recherche via la barre d'adresse
     def search(self):
