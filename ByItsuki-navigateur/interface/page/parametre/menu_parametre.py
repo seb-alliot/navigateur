@@ -5,11 +5,11 @@ from PySide6.QtWidgets import (
 
 
 from PySide6.QtCore import Qt
-from utils import create_button
+from utils import CreateElements
 
 
 class Menu_parametre(QWidget):
-    def __init__(self):
+    def __init__(self, profile=None):
         super().__init__()
         self.setWindowTitle("Paramètres")
         self.resize(600, 400)
@@ -18,10 +18,11 @@ class Menu_parametre(QWidget):
         button_layout = QVBoxLayout()
         self.setLayout(button_layout)
 
-        settings_button = create_button("Paramètres", self.open_settings)
+        self.creator = CreateElements(self, profile)
+        settings_button = self.creator.create_button("Paramètres", self.open_settings)
         button_layout.addWidget(settings_button)
 
-        help_button = create_button("Aide", self.open_help)
+        help_button = self.creator.create_button("Aide", self.open_help)
         button_layout.addWidget(help_button)
 
     def open_settings(self):

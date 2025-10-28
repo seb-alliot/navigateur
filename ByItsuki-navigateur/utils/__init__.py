@@ -10,7 +10,4 @@ from .search_profil.silence_log_js import SilentWebEnginePage
 from .style.base_style_page import base_style
 
 # bouton
-from .bouton.tab import create_tab
-from .bouton.button import create_button
-from .bouton.input import create_input
-from .bouton.select import create_select
+from .classe.create_element import CreateElements

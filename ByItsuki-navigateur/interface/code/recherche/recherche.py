@@ -21,8 +21,6 @@ load_dotenv(dotenv_path=config_path)
 def research(self, query, choix):
     query = query
 
-    # On récup
-
     # On récupère l’URL de base du moteur choisi
     moteur = os.getenv(choix)
 

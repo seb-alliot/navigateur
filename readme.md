@@ -27,9 +27,10 @@ Use the requirements.txt file to install the necessary modules:
 ==>
 ## pip install -r requirements.txt in console
 
-or :
+and for compiled this application
 
 ==>
+
 ## pyinstaller --onefile --noconsole navigateur.spec
 
 
