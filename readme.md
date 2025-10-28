@@ -29,9 +29,10 @@ Use the requirements.txt file to install the necessary modules:
 
 and for compiled this application
 
+## pyinstaller --onefile --noconsole --name Navigateur-ByItsuki --add-data "ByItsuki-navigateur\configuration\.config;configuration" ByItsuki-navigateur\interface\page\principal\principal.py
 ==>
 
-## pyinstaller --onefile --noconsole navigateur.spec
+## pyinstaller navigateur.spec
 
 
 ## Known Issues
