@@ -9,8 +9,9 @@ from .search_profil.silence_log_js import SilentWebEnginePage
 #style
 from .style.base_style_page import base_style
 
+
 # create_element
 from .classe.create_element import CreateElements
 
 # History
-from .classe.gestion_history import GestionHistory
+from .classe.gestion_navigation import GestionNavigation

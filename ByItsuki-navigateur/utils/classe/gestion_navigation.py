@@ -1,9 +1,20 @@
 import json
 from datetime import datetime
+from urllib.parse import quote_plus
 # from interface.code import navigation
 from PySide6.QtCore import QUrl
+from pathlib import Path
+import sys , os
+from dotenv import load_dotenv
 
-class GestionHistory:
+# Gestion du chemin projet
+if getattr(sys, 'frozen', False):
+    base_path = Path(sys._MEIPASS)
+else:
+    base_path = Path(__file__).resolve().parent.parent.parent.parent
+
+
+class GestionNavigation:
     def __init__(self, tab_widget, url_search, history_file):
         self.tab_widget = tab_widget
         self.url_search = url_search
@@ -36,12 +47,12 @@ class GestionHistory:
             json.dump(self.history_data, f, ensure_ascii=False, indent=2)
 
     # -------------------------
-    def add_entry(self, url, title=None):
+    def add_entry(self, url, title):
         self.history_data = self.history_data[:self.current_pos + 1]
         entry = {
             "timestamp": datetime.now().isoformat(),
             "url": url,
-            "title": title or "Page sans titre"
+            "title": title
         }
 
         self.history_data.append(entry)
@@ -64,17 +75,20 @@ class GestionHistory:
 
     # -------------------------
     def load_url(self, url):
-        self.tab_widget.web_view.load(url if isinstance(url, str) else url)
+        qurl = url if isinstance(url, QUrl) else QUrl(url)
+        self.tab_widget.web_view.load(qurl)
         if self.url_search:
-            self.url_search.setText(url if isinstance(url, str) else url.toString())
-            self.tab_widget.web_view.load(QUrl(url))
+            self.url_search.setText(qurl.toString())
 
     # # -------------------------
-    # def navigate(self):
-    #     """Navigation vers l'URL actuelle (utilise la fonction navigation externe)."""
-    #     navigation(
-    #         self.tab_widget,
-    #         self.url_search,
-    #         self.current_pos,
-    #         self.history_file
-    #     )
+    def research(self, choix):
+        choix = os.getenv(choix)
+        query = self.url_search.text().strip()
+        if query:
+            encode_query = quote_plus(query)
+            self.url_search.clear()
+            url = QUrl(f"{choix}{encode_query}")
+            self.load_url(url)
+        else:
+            url = QUrl(choix)
+            self.load_url(choix)

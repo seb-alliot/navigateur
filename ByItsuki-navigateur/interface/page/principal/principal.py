@@ -26,7 +26,6 @@ from utils import (
     root_icon,
     create_profile,
     CreateElements,
-    GestionHistory
 )
 
 
@@ -144,34 +143,26 @@ class Principal(BasePage):
         self.url_search.setText(current_tab.web_view.url().toString())
 
     # --- Méthode interne commune ---
-    def base_page(self, query=None, moteur=None):
-        query = (query or "").strip()
+    def search(self, moteur=None):
         moteur = moteur or self.choice_moteur.currentText().upper()
         default = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
 
         choix = moteur if moteur != default else default
+        print(f"valeur de choix dans principal search: {choix}")
 
         use_tab = self.tab.currentWidget()
         if not use_tab or not hasattr(use_tab, "web_view"):
             self.new_tab()
             use_tab = self.tab.currentWidget()
 
-        url = research(self, query, choix)
-        if url:
-            use_tab.web_view.load(url[0])
-            if query:
-                self.url_search.setText(url[0].toString())
-            else:
-                self.url_search.setText(url[0].toString().split("?q=")[0])
+        if hasattr(use_tab, "history_manager"):
+            use_tab.history_manager.research(choix)
 
-    # Recherche via la barre d'adresse
-    def search(self):
-        self.base_page(self.url_search.text(), self.choice_moteur.currentText().upper())
 
     # Page d'accueil par defaut par rapport au moteur par default
     def go_home(self):
         moteur = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
-        self.base_page("", moteur)
+        self.search(moteur)
 
     # Fermer un onglet
     def close_tab(self, index):

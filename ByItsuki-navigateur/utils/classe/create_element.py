@@ -9,7 +9,7 @@ from PySide6.QtCore import QUrl
 from utils.search_profil.silence_log_js import SilentWebEnginePage
 from utils import base_style, root_history
 from interface.code import click_link
-from utils.classe.gestion_history import GestionHistory
+from utils.classe.gestion_navigation import GestionNavigation
 
 class CreateElements(QWidget):
     def __init__(self, parent, profile, title="Nouvel onglet",
@@ -141,6 +141,7 @@ class CreateElements(QWidget):
             if data:
                 tab_widget.current_pos = data["current_pos"]
                 tab_widget.history_tab = data["history_tab"]
+                title = web_view.title()
                 url = data["url"]
             tab_widget.history_manager.add_entry(url, title)
 
@@ -168,7 +169,7 @@ class CreateElements(QWidget):
         web_view.load(QUrl(accueil_entry["url"]))
 
         # --- Navigation personnalisée ---
-        tab_widget.history_manager = GestionHistory(tab_widget, parent.url_search, tab_widget.history_file)
+        tab_widget.history_manager = GestionNavigation(tab_widget, parent.url_search, tab_widget.history_file)
         layout.addWidget(web_view)
 
         return tab_widget

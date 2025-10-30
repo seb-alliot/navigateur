@@ -12,7 +12,14 @@ def click_link(url, tab_index, web_view_title , history_general, current_pos):
                 history_tab = json.load(f)
         else:
             history_tab = []
-
+        web_view_title = web_view_title.replace("https://www.", "")\
+                            .replace("/", "")\
+                            .replace(".", " ")\
+                            .title()\
+                            .replace("Com", "Com")\
+                            .replace("Fr", "Fr")\
+                            .replace("Org", "Org")\
+                            .replace("- Recherche Google", "")
         entry = {
             "timestamp": datetime.now().isoformat(),
             "url": url,
@@ -49,5 +56,6 @@ def click_link(url, tab_index, web_view_title , history_general, current_pos):
             "current_pos": current_pos,
             "history_tab": history_tab,
             "url": entry["url"],
+            "title": entry["title"],
         }
         return data

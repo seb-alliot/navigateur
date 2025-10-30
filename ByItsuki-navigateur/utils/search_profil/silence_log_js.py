@@ -22,7 +22,16 @@ class SilentWebEnginePage(QWebEnginePage):
         return True
 
     def acceptNavigationRequest(self, url, nav_type, isMainFrame):
+        url_str = url.toString()
+
+        # Si c’est un vrai clic sur un lien
         if nav_type == QWebEnginePage.NavigationTypeLinkClicked:
-            url_str = url.toString()
             self.linkClickedSignal.emit(url_str)
+            return True  # autorise la navigation
+
+        # Si la page principale change (ex : Bing redirige après validation)
+        if isMainFrame and nav_type == QWebEnginePage.NavigationTypeOther:
+            self.linkClickedSignal.emit(url_str)
+            return True
+
         return super().acceptNavigationRequest(url, nav_type, isMainFrame)
