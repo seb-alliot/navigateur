@@ -19,13 +19,14 @@ from interface.page.parametre.menu_parametre import Menu_parametre
 from interface.code import (
     research,
     close_tab_window,
-    navigation,
+    # navigation,
 )
 
 from utils import (
     root_icon,
     create_profile,
     CreateElements,
+    GestionHistory
 )
 
 
@@ -41,17 +42,17 @@ class Principal(BasePage):
         # --- Barre d'adresse ---
         address_layout = QHBoxLayout()
         self.creator = CreateElements(self, self.profile)
-        self.button_back = self.creator.create_button("←", self.back, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Retourner à la page précédente")
+        self.button_back = self.creator.create_button("←", self.back, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Page précédente")
         address_layout.addWidget(self.button_back)
 
-        self.button_forward = self.creator.create_button("→", self.forward, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Aller à la page suivante")
+        self.button_forward = self.creator.create_button("→", self.forward, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Page suivante")
         address_layout.addWidget(self.button_forward)
 
-        self.reload_button = self.creator.create_button("⟳", self.reload, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Recharger la page")
+        self.reload_button = self.creator.create_button("⟳", self.reload, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Recharger la page")
         self.reload_button.clicked.connect(self.reload)
         address_layout.addWidget(self.reload_button)
 
-        self.start = self.creator.create_button("🏠", self.go_home, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Page d'accueil")
+        self.start = self.creator.create_button("🏠", self.go_home, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Page d'accueil")
         self.start.clicked.connect(self.go_home)
         address_layout.addWidget(self.start)
 
@@ -66,19 +67,19 @@ class Principal(BasePage):
         )
         address_layout.addWidget(self.choice_moteur)
 
-        self.url_search = self.creator.create_input("Barre de recherche...", self.search, min_width=500, max_width=None, min_height=40, max_height=40, tooltip="Entrer votre recherche ou URL ici")
+        self.url_search = self.creator.create_input("Barre de recherche...", self.search, min_width=500, max_width=None, min_height=40, max_height=40, tool_tip="Entrer votre recherche ou URL ici")
         address_layout.addWidget(self.url_search)
 
         address_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.search_button = self.creator.create_button("🔍", self.search, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Lancer la recherche")
+        self.search_button = self.creator.create_button("🔍", self.search, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Lancer la recherche")
         self.url_search.returnPressed.connect(self.search)
         address_layout.addWidget(self.search_button)
 
-        self.open_button = self.creator.create_button("+", self.new_tab, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Nouvel onglet")
+        self.open_button = self.creator.create_button("+", self.new_tab, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Nouvel onglet")
         address_layout.addWidget(self.open_button)
 
-        self.parameter_menu_button = self.creator.create_button("", self.menu_parametre, min_width=40, min_height=40, max_height=40, max_width=40, tooltip="Paramètres")
+        self.parameter_menu_button = self.creator.create_button("", self.menu_parametre, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Paramètres")
         icon_file = root_icon("menu_icon.png")
         self.parameter_menu_button.setIcon(QIcon(str(icon_file)))
         # la ligne en dessous est a commenter quand on compile en .exe
@@ -106,11 +107,13 @@ class Principal(BasePage):
 
     def back(self):
         tab = self.tab.currentWidget()
-        navigation(tab, self.url_search, tab.current_pos - 1)
+        if hasattr(tab, "history_manager"):
+            tab.history_manager.back()
 
     def forward(self):
         tab = self.tab.currentWidget()
-        navigation(tab, self.url_search, tab.current_pos + 1)
+        if hasattr(tab, "history_manager"):
+            tab.history_manager.forward()
 
     def reload(self):
         use_tab = self.tab.currentWidget()
@@ -175,7 +178,7 @@ class Principal(BasePage):
         tab = self.tab.widget(index)
         close_tab_window(self.tab, index, tab)
 
-    # Tout fermer proprement
+    # Tout fermer proprement à la fermeture de l'application
     def closeEvent(self, event):
         while self.tab.count() > 0:
             self.close_tab(0)

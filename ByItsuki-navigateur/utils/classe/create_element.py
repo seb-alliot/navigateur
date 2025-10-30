@@ -8,8 +8,8 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QUrl
 from utils.search_profil.silence_log_js import SilentWebEnginePage
 from utils import base_style, root_history
-from interface.code.navigation.history.tab_history import TabHistory
 from interface.code import click_link
+from utils.classe.gestion_history import GestionHistory
 
 class CreateElements(QWidget):
     def __init__(self, parent, profile, title="Nouvel onglet",
@@ -48,14 +48,14 @@ class CreateElements(QWidget):
         max_width = kwargs.get("max_width", None)
         min_height = kwargs.get("min_height", 30)
         max_height = kwargs.get("max_height", 45)
-        tooltip = kwargs.get("tool_tip", "")
+        tool_tip = kwargs.get("tool_tip", "")
         extra_style = kwargs.get("extra_style", "")
 
         input_field = QLineEdit()
         input_field.setPlaceholderText(placeholder)
         input_field.setMinimumSize(min_width, min_height)
         input_field.setMaximumHeight(max_height)
-        input_field.setToolTip(tooltip)
+        input_field.setToolTip(tool_tip)
         if max_width:
             input_field.setMaximumWidth(max_width)
         if extra_style:
@@ -70,12 +70,12 @@ class CreateElements(QWidget):
         max_width = kwargs.get("max_width", None)
         min_height = kwargs.get("min_height", 30)
         max_height = kwargs.get("max_height", 45)
-        tooltip = kwargs.get("tooltip", "")
+        tool_tip = kwargs.get("tool_tip", "")
 
         combo_box = QComboBox()
         combo_box.addItems(options or [])
         combo_box.setCurrentIndex(default_index)
-        combo_box.setToolTip(tooltip)
+        combo_box.setToolTip(tool_tip)
 
         if min_width:
             combo_box.setMinimumWidth(min_width)
@@ -142,8 +142,8 @@ class CreateElements(QWidget):
                 tab_widget.current_pos = data["current_pos"]
                 tab_widget.history_tab = data["history_tab"]
                 url = data["url"]
-                if hasattr(parent, "url_search"):
-                    parent.url_search.setText(data["url"])
+            tab_widget.history_manager.add_entry(url, title)
+
 
         page.linkClickedSignal.connect(on_link_clicked)
         tab_widget.on_link_clicked = on_link_clicked
@@ -155,13 +155,20 @@ class CreateElements(QWidget):
             if index >= 0 and not icon.isNull():
                 parent.tab.setTabIcon(index, icon)
 
-        web_view.iconChanged.connect(update_tab_icon)
+        def update_url(url):
+            if hasattr(parent, "url_search"):
+                parent.url_search.setText(url.toString())
 
-        # --- Navigation personnalisée ---
-        tab_widget.history_manager = TabHistory(tab_widget, parent.url_search)
+        web_view.iconChanged.connect(update_tab_icon)
+        web_view.urlChanged.connect(update_url)
+
+        tab_widget.tab_index = tab_index
 
         # --- Charger la page d’accueil ---
         web_view.load(QUrl(accueil_entry["url"]))
 
+        # --- Navigation personnalisée ---
+        tab_widget.history_manager = GestionHistory(tab_widget, parent.url_search, tab_widget.history_file)
         layout.addWidget(web_view)
+
         return tab_widget

@@ -9,5 +9,8 @@ from .search_profil.silence_log_js import SilentWebEnginePage
 #style
 from .style.base_style_page import base_style
 
-# bouton
+# create_element
 from .classe.create_element import CreateElements
+
+# History
+from .classe.gestion_history import GestionHistory
