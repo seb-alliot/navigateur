@@ -148,7 +148,6 @@ class Principal(BasePage):
         default = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
 
         choix = moteur if moteur != default else default
-        print(f"valeur de choix dans principal search: {choix}")
 
         use_tab = self.tab.currentWidget()
         if not use_tab or not hasattr(use_tab, "web_view"):

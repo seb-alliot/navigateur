@@ -15,3 +15,7 @@ from .classe.create_element import CreateElements
 
 # History
 from .classe.gestion_navigation import GestionNavigation
+
+
+# Title name
+from .regex_url.title_url import site_name

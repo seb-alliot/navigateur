@@ -5,7 +5,17 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QSizePolicy, QPushButton, QLineEdit, QComboBox
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, QObject, Signal, Slot
+
+from PySide6.QtWebChannel import QWebChannel
+
+class JSHandler(QObject):
+    linkClickedSignal = Signal(str)
+
+    @Slot(str)
+    def linkClicked(self, url):
+        self.linkClickedSignal.emit(url)
+
 from utils.search_profil.silence_log_js import SilentWebEnginePage
 from utils import base_style, root_history
 from interface.code import click_link
@@ -95,7 +105,6 @@ class CreateElements(QWidget):
         history_root = root_history()
         history_general = history_root / "general"
         history_general.mkdir(parents=True, exist_ok=True)
-
         tab_index = parent.tab.count() + 1
         tab_folder = history_root / f"tab_{tab_index}"
         tab_folder.mkdir(parents=True, exist_ok=True)
@@ -103,9 +112,10 @@ class CreateElements(QWidget):
 
         # --- Page d'accueil ---
         moteur = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
-        moteur_str = os.getenv(moteur, "https://www.google.com/search?q=").split("search?q=")[0]
+        moteur_str = os.getenv(moteur).split("search?q=")[0]
 
         accueil_entry = {
+            "moteur": moteur,
             "timestamp": datetime.now().isoformat(),
             "url": moteur_str,
             "title": "Accueil",
@@ -120,35 +130,51 @@ class CreateElements(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        web_view = QWebEngineView()
-        web_view.history().clear()
-        page = SilentWebEnginePage(profile, web_view)
-        web_view.setPage(page)
-        web_view.setHtml(base_style())
+        self.web_view = QWebEngineView()
+        self.web_view.history().clear()
+        self.page = SilentWebEnginePage(profile, self.web_view)
+        self.web_view.setPage(self.page)
+        self.web_view.setHtml(base_style())
 
         # --- Infos internes ---
         tab_widget.title = title
         tab_widget.profile = profile
-        tab_widget.web_view = web_view
+        tab_widget.web_view = self.web_view
         tab_widget.history_root = tab_folder
         tab_widget.history_file = history_file
-        tab_widget.current_pos = 0
-        tab_widget.page = page
 
+        # --- Navigation personnalisée ---
+        tab_widget.history_manager = GestionNavigation(tab_widget, parent.url_search, tab_widget.history_file)
+        tab_widget.current_pos = 0
+        tab_widget.page = self.page
+        tab_widget.tab_index = tab_index
+
+
+        # --- Injetion JS + WebChannel ---
+        # --- JS Bridge ---
+        self.channel = QWebChannel()
+        self.js_handler = JSHandler()
+        self.signal = self.js_handler.linkClickedSignal
+        self.channel.registerObject("qt_object", self.js_handler)
+        self.page.setWebChannel(self.channel)
+
+        # Connecte le signal Python
+        self.js_handler.linkClickedSignal.connect(self.on_js_link_clicked)
         # --- Historique des liens ---
         def on_link_clicked(url):
-            data = click_link(url, tab_index, web_view.title(), history_general, tab_widget.current_pos)
+            moteur = parent.choice_moteur.currentText().upper()
+            data = click_link(url, tab_index, self.web_view.title(), moteur, history_general, tab_widget.current_pos)
             if data:
                 tab_widget.current_pos = data["current_pos"]
                 tab_widget.history_tab = data["history_tab"]
-                title = web_view.title()
+                title = data["title"]
+                moteur = data["moteur"]
                 url = data["url"]
-            tab_widget.history_manager.add_entry(url, title)
+            tab_widget.history_manager.add_entry(url, moteur, title)
 
-
-        page.linkClickedSignal.connect(on_link_clicked)
+        self.page.linkClickedSignal.connect(on_link_clicked)
+        self.signal.connect(on_link_clicked)
         tab_widget.on_link_clicked = on_link_clicked
-
 
         # --- Icône d’onglet ---
         def update_tab_icon(icon):
@@ -160,16 +186,67 @@ class CreateElements(QWidget):
             if hasattr(parent, "url_search"):
                 parent.url_search.setText(url.toString())
 
-        web_view.iconChanged.connect(update_tab_icon)
-        web_view.urlChanged.connect(update_url)
-
-        tab_widget.tab_index = tab_index
+        self.web_view.iconChanged.connect(update_tab_icon)
+        self.web_view.urlChanged.connect(update_url)
 
         # --- Charger la page d’accueil ---
-        web_view.load(QUrl(accueil_entry["url"]))
-
-        # --- Navigation personnalisée ---
-        tab_widget.history_manager = GestionNavigation(tab_widget, parent.url_search, tab_widget.history_file)
-        layout.addWidget(web_view)
+        self.web_view.load(QUrl(accueil_entry["url"]))
+        layout.addWidget(self.web_view)
+        self.web_view.loadFinished.connect(self.inject_js_after_load)
 
         return tab_widget
+    # --- JS Injection ---
+    def inject_js_after_load(self, ok):
+        if not ok:
+            return
+
+        # Injecte la lib du WebChannel
+        self.web_view.page().runJavaScript("""
+        var s=document.createElement('script');
+        s.src='qrc:///qtwebchannel/qwebchannel.js';
+        document.head.appendChild(s);
+        """)
+
+        # Injecte le code principal
+        js_code = """
+        setTimeout(function(){
+            (function(){
+                function setup(){
+                    if(typeof qt==='undefined'||!qt.webChannelTransport){
+                        console.log("WebChannel not ready, retrying...");
+                        setTimeout(setup,500);
+                        return;
+                    }
+                    new QWebChannel(qt.webChannelTransport,function(channel){
+                        const qt_object=channel.objects.qt_object;
+                        function attach(a){
+                            a.addEventListener('click',function(e){
+                                e.preventDefault();
+                                qt_object.linkClicked(this.href);
+                            });
+                        }
+                        document.querySelectorAll('a').forEach(attach);
+                        const obs=new MutationObserver(m=>{
+                            m.forEach(x=>{
+                                x.addedNodes.forEach(n=>{
+                                    if(n.tagName==='A')attach(n);
+                                    else if(n.querySelectorAll)
+                                        n.querySelectorAll('a').forEach(attach);
+                                });
+                            });
+                        });
+                        obs.observe(document.body,{childList:true,subtree:true});
+                        console.log("qt_object connected and listeners active");
+                    });
+                }
+                setup();
+            })();
+        },800);
+        """
+        self.web_view.page().runJavaScript(js_code)
+
+
+    # --- Réception JS ---
+    def on_js_link_clicked(self, url):
+        if url.startswith("http"):
+            self.web_view.setUrl(QUrl(url))

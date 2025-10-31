@@ -47,9 +47,10 @@ class GestionNavigation:
             json.dump(self.history_data, f, ensure_ascii=False, indent=2)
 
     # -------------------------
-    def add_entry(self, url, title):
+    def add_entry(self, url, moteur, title):
         self.history_data = self.history_data[:self.current_pos + 1]
         entry = {
+            "moteur": moteur,
             "timestamp": datetime.now().isoformat(),
             "url": url,
             "title": title
