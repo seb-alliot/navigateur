@@ -6,7 +6,7 @@ from PySide6.QtCore import QUrl
 from pathlib import Path
 import sys , os
 from dotenv import load_dotenv
-
+load_dotenv
 # Gestion du chemin projet
 if getattr(sys, 'frozen', False):
     base_path = Path(sys._MEIPASS)
@@ -33,6 +33,7 @@ class GestionNavigation:
 
         if not self.history_data:
             self.history_data = [{
+                "moteur": os.getenv("MOTEURRECHERCHE"),
                 "timestamp": datetime.now().isoformat(),
                 "url": "https://www.google.com/",
                 "title": "Accueil"

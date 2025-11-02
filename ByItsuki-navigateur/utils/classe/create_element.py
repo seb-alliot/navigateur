@@ -2,12 +2,13 @@ import os
 import json
 from datetime import datetime
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QSizePolicy, QPushButton, QLineEdit, QComboBox
+    QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QPushButton, QLineEdit, QComboBox, QTabWidget
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl, QObject, Signal, Slot
+from PySide6.QtCore import QUrl, QObject, Signal, Slot, Qt , QMimeData
 
 from PySide6.QtWebChannel import QWebChannel
+from PySide6.QtGui import QDragEnterEvent, QDropEvent , QDrag
 
 class JSHandler(QObject):
     linkClickedSignal = Signal(str)
@@ -44,7 +45,11 @@ class CreateElements(QWidget):
 
         button = QPushButton(placeholder)
         button.setMinimumSize(min_width, min_height)
-        button.setMaximumSize(max_width, max_height)
+        button.setStyleSheet("QPushButton { border: none; margin: 0px; padding: 0px; }")
+        if max_width == None:
+            button.setMaximumWidth(16777215)
+        if max_height == None:
+            button.setMaximumHeight(16777215)
         if extra_style:
             button.setStyleSheet(extra_style)
         if tool_tip:
@@ -62,6 +67,7 @@ class CreateElements(QWidget):
         extra_style = kwargs.get("extra_style", "")
 
         input_field = QLineEdit()
+        input_field.setStyleSheet("QLineEdit { border: none; margin: 0px; padding: 0px; }")
         input_field.setPlaceholderText(placeholder)
         input_field.setMinimumSize(min_width, min_height)
         input_field.setMaximumHeight(max_height)
@@ -83,6 +89,8 @@ class CreateElements(QWidget):
         tool_tip = kwargs.get("tool_tip", "")
 
         combo_box = QComboBox()
+        combo_box.setStyleSheet("QComboBox { background-color: #1f1f1f; border: none; margin: 0px; padding: 0px; }")
+
         combo_box.addItems(options or [])
         combo_box.setCurrentIndex(default_index)
         combo_box.setToolTip(tool_tip)
@@ -97,6 +105,22 @@ class CreateElements(QWidget):
             combo_box.setMaximumHeight(16777215 if max_height is None else max_height)
 
         return combo_box
+
+    # -----------------------------
+    def fav_bar(self, parent, slot=None, icon=None, title=None, **kwargs):
+        from utils.classe.fav_bar import FavBar
+        min_height = kwargs.get("min_height", 30)
+        max_height = kwargs.get("max_height", 45)
+        tool_tip = kwargs.get("tool_tip", "")
+
+        return FavBar(parent=parent, slot=slot, icon=icon, title=title,
+                        min_height=min_height, max_height=max_height,
+                        tool_tip=tool_tip)
+    # -----------------------------
+    def drop_button(self, line_edit, icon=None):
+        from utils.classe.drop_url import DropButton
+        drop_button = DropButton(line_edit=line_edit, icon=icon)
+        return drop_button
 
     # -----------------------------
     def create_tab(self, parent, profile, title="Nouvel onglet",
@@ -126,6 +150,7 @@ class CreateElements(QWidget):
 
         # --- Configuration du widget onglet ---
         tab_widget = QWidget()
+        tab_widget.setStyleSheet("QPushButton { border: none; margin: 0px; padding: 0px; }")
         layout = QVBoxLayout(tab_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -244,6 +269,7 @@ class CreateElements(QWidget):
         },800);
         """
         self.web_view.page().runJavaScript(js_code)
+
 
 
     # --- Réception JS ---

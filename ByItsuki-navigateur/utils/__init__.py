@@ -9,9 +9,11 @@ from .search_profil.silence_log_js import SilentWebEnginePage
 #style
 from .style.base_style_page import base_style
 
-
+#class
 # create_element
 from .classe.create_element import CreateElements
+# drop_url
+from .classe.drop_url import DropButton
 
 # History
 from .classe.gestion_navigation import GestionNavigation

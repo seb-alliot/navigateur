@@ -1,22 +1,39 @@
 from urllib.parse import urlparse, parse_qs, unquote
 
-def site_name(web_view_title, moteur):
-    print(f"site_name appelé avec: {web_view_title}, moteur: {moteur}")
+def site_name(web_view_title: str, moteur=None) -> str:
+    """
+    Détermine un nom propre de site ou de recherche à partir du titre et/ou de l'URL.
+    Compatible avec Google, Bing, DuckDuckGo, Qwant, etc.
+    """
+    if not web_view_title:
+        return ""
 
-    parsed_url = urlparse(web_view_title)
-    query_params = parse_qs(parsed_url.query)
+    # --- Si c’est une URL (contient http ou https)
+    if web_view_title.startswith("http"):
+        parsed_url = urlparse(web_view_title)
+        domain = parsed_url.netloc.lower()
+        query_params = parse_qs(parsed_url.query)
 
-    # Définition des suffixes à enlever
-    suffixes = (" - Recherche Google", " - Google Search", " - Bing", " at DuckDuckGo", " – Recherche Qwant", " - Recherche")
+        # Cas : pages de recherche
+        if "google" in domain or "bing" in domain or "duckduckgo" in domain or "qwant" in domain:
+            search_term = query_params.get("q", [""])[0]
+            if search_term:
+                return unquote(search_term).replace("+", " ").strip().capitalize()
 
-    # Extraction du param 'q' si présent
-    search_term = web_view_title
-    if 'q' in query_params:
-        search_term = unquote(query_params['q'][0])
+        # Cas générique : juste le nom de domaine sans www
+        domain = domain.replace("www.", "")
+        return domain.split(".")[0].capitalize()
 
-    # Nettoyage des suffixes
+    # --- Sinon, c’est un titre de page classique
+    suffixes = (
+        " - Recherche Google", " - Google Search", " - Bing",
+        " at DuckDuckGo", " – Recherche Qwant", " - Recherche",
+        " | YouTube", " - YouTube", " | LinkedIn", " - LinkedIn"
+    )
+
+    clean_title = web_view_title
     for s in suffixes:
-        if s in search_term:
-            search_term = search_term.replace(s, '')
+        if s in clean_title:
+            clean_title = clean_title.replace(s, "")
 
-    return search_term.strip()
+    return clean_title.strip().capitalize()

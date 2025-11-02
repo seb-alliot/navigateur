@@ -8,7 +8,7 @@ if str(project_root) not in sys.path:
     sys.path.append(str(project_root))
 
 
-from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QSizePolicy, QTabWidget, QComboBox
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QApplication, QSizePolicy, QTabWidget, QComboBox , QWidget
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QSize, QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -17,15 +17,15 @@ from PySide6.QtWebEngineCore import QWebEngineProfile
 from interface.page.base_page import BasePage
 from interface.page.parametre.menu_parametre import Menu_parametre
 from interface.code import (
-    research,
     close_tab_window,
-    # navigation,
 )
 
 from utils import (
     root_icon,
     create_profile,
     CreateElements,
+    root_history,
+    site_name,
 )
 
 
@@ -34,13 +34,18 @@ class Principal(BasePage):
         super().__init__()
         # --- Profil pour les pages Web ---
         self.profile = create_profile(self)
-
+        self.creator = CreateElements(self, self.profile)
         self.init_interface()
 
+
     def init_interface(self):
+
+        self.content_navigation = QVBoxLayout()
+        self.content_layout.addLayout(self.content_navigation)
+
         # --- Barre d'adresse ---
         address_layout = QHBoxLayout()
-        self.creator = CreateElements(self, self.profile)
+
         self.button_back = self.creator.create_button("←", self.back, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Page précédente")
         address_layout.addWidget(self.button_back)
 
@@ -52,7 +57,6 @@ class Principal(BasePage):
         address_layout.addWidget(self.reload_button)
 
         self.start = self.creator.create_button("🏠", self.go_home, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Page d'accueil")
-        self.start.clicked.connect(self.go_home)
         address_layout.addWidget(self.start)
 
         self.choice_moteur = self.creator.create_select(
@@ -69,7 +73,14 @@ class Principal(BasePage):
         self.url_search = self.creator.create_input("Barre de recherche...", self.search, min_width=500, max_width=None, min_height=40, max_height=40, tool_tip="Entrer votre recherche ou URL ici")
         address_layout.addWidget(self.url_search)
 
-        address_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.drop_button = self.creator.drop_button(line_edit=self.url_search, icon=None)
+        icon_file = root_icon("drop_icon.png")
+        self.drop_button.setIcon(QIcon(str(icon_file)))
+        self.drop_button.setIconSize(QSize(35, 35))
+        self.drop_button.drop.connect(lambda url: self.save_favorites(url))
+
+        index = address_layout.indexOf(self.url_search)
+        address_layout.insertWidget(index, self.drop_button)
 
         self.search_button = self.creator.create_button("🔍", self.search, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Lancer la recherche")
         self.url_search.returnPressed.connect(self.search)
@@ -81,19 +92,29 @@ class Principal(BasePage):
         self.parameter_menu_button = self.creator.create_button("", self.menu_parametre, min_width=40, min_height=40, max_height=40, max_width=40, tool_tip="Paramètres")
         icon_file = root_icon("menu_icon.png")
         self.parameter_menu_button.setIcon(QIcon(str(icon_file)))
-        # la ligne en dessous est a commenter quand on compile en .exe
-        self.parameter_menu_button.setIcon(QIcon(str(root_icon("menu_icon.png"))))
-        self.parameter_menu_button.setIconSize(QSize(24, 24))
+        self.parameter_menu_button.setIconSize(QSize(35, 35))
         address_layout.addWidget(self.parameter_menu_button)
-
         self.content_layout.addLayout(address_layout)
 
-        # --- Onglets --
+        # --- nouvelle bar horizontale pour les favoris ---
+        self.fav_content = QHBoxLayout()
+        self.fav_content.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        # --- Barre de favoris ---
+        self.favorite_bar = self.creator.fav_bar(parent=self, slot=self.open_favorite, title=None, icon=None, min_height=40, max_height=40)
+        self.favorite_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        self.fav_content.addWidget(self.favorite_bar)
+        self.content_layout.addLayout(self.fav_content)
+
+        # --- nouvelle bar horizontale pour les onglets ---
+        self.onglet_content = QVBoxLayout()
+        # --- Onglets ---
+        self.onglet_layout = QHBoxLayout()
         self.tab = QTabWidget(self)
         self.tab.setTabsClosable(True)
         self.tab.tabCloseRequested.connect(self.close_tab)
         self.tab.currentChanged.connect(self.change_tab)
-        self.content_layout.addWidget(self.tab)
+        self.onglet_layout.addWidget(self.tab)
 
         # --- Onglet de base (Accueil) ---
         self.home_tab = self.creator.create_tab(self, profile=self.profile)
@@ -101,8 +122,9 @@ class Principal(BasePage):
         self.tab.setCurrentWidget(self.home_tab)
         self.home_tab.web_view.titleChanged.connect(lambda title: self.tab.setTabText(0, title[:30] if self.url_search.text().strip() != "" else "Accueil"))
 
-        # Charger la page d'accueil par défaut
-        self.go_home()
+        self.content_layout.addLayout(self.onglet_layout)
+        self.content_navigation.addLayout(self.onglet_content)
+        self.onglet_layout.addWidget(self.tab)
 
     def back(self):
         tab = self.tab.currentWidget()
@@ -146,7 +168,6 @@ class Principal(BasePage):
     def search(self, moteur=None):
         moteur = moteur or self.choice_moteur.currentText().upper()
         default = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
-
         choix = moteur if moteur != default else default
 
         use_tab = self.tab.currentWidget()
@@ -173,6 +194,33 @@ class Principal(BasePage):
         while self.tab.count() > 0:
             self.close_tab(0)
         event.accept()
+
+    def open_favorite(self, url):
+        current_tab = self.tab.currentWidget()
+        if current_tab and hasattr(current_tab, "web_view"):
+            current_tab.web_view.load(QUrl(url))
+            return
+
+    def save_favorites(self, url):
+        favoris_file = root_history() / "favoris-bar" / "favoris.json"
+        favoris_file.parent.mkdir(parents=True, exist_ok=True)
+        if not favoris_file.exists():
+            with open(favoris_file, "w", encoding="utf-8") as f:
+                json.dump([], f, ensure_ascii=False, indent=2)
+        try:
+            with open(favoris_file, "r", encoding="utf-8") as f:
+                favoris = json.load(f)
+        except (PermissionError, json.JSONDecodeError):
+            favoris = []
+        entry = {
+            "url": url,
+            "title": site_name(url, moteur=None),
+            "icon": self.tab.currentWidget().web_view.iconUrl().toString()
+        }
+        if entry:
+            favoris.append(entry)
+            with open(favoris_file, "w", encoding="utf-8") as f:
+                json.dump(favoris, f, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

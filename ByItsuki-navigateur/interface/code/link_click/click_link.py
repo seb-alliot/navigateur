@@ -13,7 +13,6 @@ def click_link(url, tab_index, web_view_title , moteur, history_general, current
             history_tab = []
         from utils import site_name
         web_view_title = site_name(web_view_title, moteur)
-        print(f"Title dans click_link: {url} -> {web_view_title}, moteur: {moteur}")
         entry = {
             "moteur": moteur,
             "timestamp": datetime.now().isoformat(),
