@@ -1,14 +1,10 @@
-import os
-import json
-from datetime import datetime
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QSizePolicy, QPushButton, QLineEdit, QComboBox, QTabWidget
+    QWidget, QSizePolicy,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl, QObject, Signal, Slot, Qt , QMimeData
-
+from PySide6.QtCore import QUrl, QObject, Signal, Slot, Qt
 from PySide6.QtWebChannel import QWebChannel
-from PySide6.QtGui import QDragEnterEvent, QDropEvent , QDrag
+
 
 class JSHandler(QObject):
     linkClickedSignal = Signal(str)
@@ -17,14 +13,17 @@ class JSHandler(QObject):
     def linkClicked(self, url):
         self.linkClickedSignal.emit(url)
 
+
 from utils.search_profil.silence_log_js import SilentWebEnginePage
 from utils import base_style, root_history
 from interface.code import click_link
 from utils.classe.gestion_navigation import GestionNavigation
 
+
 class CreateElements(QWidget):
+
     def __init__(self, parent, profile, title="Nouvel onglet",
-                min_width=800, max_width=None, min_height=600, max_height=None):
+                 min_width=800, max_width=None, min_height=600, max_height=None):
         super().__init__(parent)
         self.parent = parent
         self.profile = profile
@@ -36,19 +35,21 @@ class CreateElements(QWidget):
 
     # -----------------------------
     def create_button(self, placeholder, slot, **kwargs):
-        min_width = kwargs.get("min_width", 200)
-        max_width = kwargs.get("max_width", 300)
-        min_height = kwargs.get("min_height", 30)
-        max_height = kwargs.get("max_height", 45)
+        from PySide6.QtWidgets import QPushButton
+
         tool_tip = kwargs.get("tool_tip", "")
         extra_style = kwargs.get("extra_style", "")
+        min_width = kwargs.get("min_width", 40)
+        max_width = kwargs.get("max_width", 40)
+        min_height = kwargs.get("min_height", 40)
+        max_height = kwargs.get("max_height", 40)
 
         button = QPushButton(placeholder)
         button.setMinimumSize(min_width, min_height)
         button.setStyleSheet("QPushButton { border: none; margin: 0px; padding: 0px; }")
-        if max_width == None:
+        if max_width is None:
             button.setMaximumWidth(16777215)
-        if max_height == None:
+        if max_height is None:
             button.setMaximumHeight(16777215)
         if extra_style:
             button.setStyleSheet(extra_style)
@@ -59,6 +60,8 @@ class CreateElements(QWidget):
 
     # -----------------------------
     def create_input(self, placeholder, slot=None, **kwargs):
+        from PySide6.QtWidgets import QLineEdit
+
         min_width = kwargs.get("min_width", 200)
         max_width = kwargs.get("max_width", None)
         min_height = kwargs.get("min_height", 30)
@@ -82,6 +85,8 @@ class CreateElements(QWidget):
 
     # -----------------------------
     def create_select(self, options=None, default_index=0, **kwargs):
+        from PySide6.QtWidgets import QComboBox
+
         min_width = kwargs.get("min_width", 200)
         max_width = kwargs.get("max_width", None)
         min_height = kwargs.get("min_height", 30)
@@ -90,7 +95,6 @@ class CreateElements(QWidget):
 
         combo_box = QComboBox()
         combo_box.setStyleSheet("QComboBox { background-color: #1f1f1f; border: none; margin: 0px; padding: 0px; }")
-
         combo_box.addItems(options or [])
         combo_box.setCurrentIndex(default_index)
         combo_box.setToolTip(tool_tip)
@@ -109,13 +113,15 @@ class CreateElements(QWidget):
     # -----------------------------
     def fav_bar(self, parent, slot=None, icon=None, title=None, **kwargs):
         from utils.classe.fav_bar import FavBar
+
         min_height = kwargs.get("min_height", 30)
         max_height = kwargs.get("max_height", 45)
         tool_tip = kwargs.get("tool_tip", "")
 
         return FavBar(parent=parent, slot=slot, icon=icon, title=title,
-                        min_height=min_height, max_height=max_height,
-                        tool_tip=tool_tip)
+                      min_height=min_height, max_height=max_height,
+                      tool_tip=tool_tip)
+
     # -----------------------------
     def drop_button(self, line_edit, icon=None):
         from utils.classe.drop_url import DropButton
@@ -124,7 +130,11 @@ class CreateElements(QWidget):
 
     # -----------------------------
     def create_tab(self, parent, profile, title="Nouvel onglet",
-                min_width=800, max_width=None, min_height=600, max_height=None):
+                   min_width=800, max_width=None, min_height=600, max_height=None):
+        import os, json
+        from datetime import datetime
+        from PySide6.QtCore import QUrl
+
         # --- Initialisation de l’historique ---
         history_root = root_history()
         history_general = history_root / "general"
@@ -136,7 +146,7 @@ class CreateElements(QWidget):
 
         # --- Page d'accueil ---
         moteur = os.getenv("MOTEURRECHERCHE", "GOOGLE").upper()
-        moteur_str = os.getenv(moteur).split("search?q=")[0]
+        moteur_str = os.getenv(moteur, "https://www.google.com/search?q=").split("search?q=")[0]
 
         accueil_entry = {
             "moteur": moteur,
@@ -151,6 +161,7 @@ class CreateElements(QWidget):
         # --- Configuration du widget onglet ---
         tab_widget = QWidget()
         tab_widget.setStyleSheet("QPushButton { border: none; margin: 0px; padding: 0px; }")
+        from PySide6.QtWidgets import QVBoxLayout
         layout = QVBoxLayout(tab_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -174,9 +185,7 @@ class CreateElements(QWidget):
         tab_widget.page = self.page
         tab_widget.tab_index = tab_index
 
-
         # --- Injetion JS + WebChannel ---
-        # --- JS Bridge ---
         self.channel = QWebChannel()
         self.js_handler = JSHandler()
         self.signal = self.js_handler.linkClickedSignal
@@ -185,6 +194,7 @@ class CreateElements(QWidget):
 
         # Connecte le signal Python
         self.js_handler.linkClickedSignal.connect(self.on_js_link_clicked)
+
         # --- Historique des liens ---
         def on_link_clicked(url):
             moteur = parent.choice_moteur.currentText().upper()
@@ -217,22 +227,21 @@ class CreateElements(QWidget):
         # --- Charger la page d’accueil ---
         self.web_view.load(QUrl(accueil_entry["url"]))
         layout.addWidget(self.web_view)
-        self.web_view.loadFinished.connect(self.inject_js_after_load)
+        if moteur == "BING":
+            self.web_view.loadFinished.connect(self.inject_js_after_load)
 
         return tab_widget
+
     # --- JS Injection ---
     def inject_js_after_load(self, ok):
         if not ok:
             return
-
-        # Injecte la lib du WebChannel
         self.web_view.page().runJavaScript("""
         var s=document.createElement('script');
         s.src='qrc:///qtwebchannel/qwebchannel.js';
         document.head.appendChild(s);
         """)
 
-        # Injecte le code principal
         js_code = """
         setTimeout(function(){
             (function(){
@@ -269,8 +278,6 @@ class CreateElements(QWidget):
         },800);
         """
         self.web_view.page().runJavaScript(js_code)
-
-
 
     # --- Réception JS ---
     def on_js_link_clicked(self, url):

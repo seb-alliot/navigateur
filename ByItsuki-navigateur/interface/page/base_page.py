@@ -1,19 +1,16 @@
-import sys
-from pathlib import Path
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout
-from PySide6.QtCore import Qt
-import os
+# -*- coding: utf-8 -*-
+from PySide6.QtWidgets import QWidget
 
 
 
 class BasePage(QWidget):
-    """Page de base étendue par toutes les autres fenêtres."""
 
     def __init__(self):
         super().__init__()
         self.resize(1024, 768)
 
         # Layout principal
+        from PySide6.QtWidgets import QVBoxLayout
         self.layout = QVBoxLayout()
         self.layout.setSpacing(0)
         self.layout.setContentsMargins(0, 0, 0, 0)

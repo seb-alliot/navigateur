@@ -1,14 +1,10 @@
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QMessageBox
-from PySide6.QtGui import QPixmap, QIcon
-from PySide6.QtCore import Qt, QSize
-from io import BytesIO
-import requests
-
-import json
-from urllib.parse import urlparse
+from PySide6.QtWidgets import QWidget
 
 class FavBar(QWidget):
     def __init__(self, parent=None, slot=None, icon=None, title=None, min_height=40, max_height=40, tool_tip=""):
+        from PySide6.QtWidgets import QHBoxLayout, QPushButton
+        from PySide6.QtCore import Qt, QSize
+
         super().__init__(parent)
         self.setAcceptDrops(True)
 
@@ -33,7 +29,6 @@ class FavBar(QWidget):
         self.hide()
         self.load_favorites()
 
-    # --- Drag & Drop ---
     def dragEnterEvent(self, event):
         if event.mimeData().hasText():
             event.acceptProposedAction()
@@ -49,9 +44,9 @@ class FavBar(QWidget):
         self.update_favorites()
         event.acceptProposedAction()
 
-    # --- Extraction favicon ---
     @staticmethod
     def favicon_url(url: str) -> str:
+        from urllib.parse import urlparse
         try:
             parsed = urlparse(url)
             base = f"{parsed.scheme}://{parsed.netloc}"
@@ -59,9 +54,12 @@ class FavBar(QWidget):
         except Exception:
             return None
 
-    # --- Ajout favori ---
     def add_favorite(self, url, title, icon=None):
+        from PySide6.QtWidgets import QPushButton
+        from PySide6.QtCore import QSize
         from utils import site_name
+        from PySide6.QtGui import Qt
+
         display_text = title[:25] if title else url[:25]
         button = QPushButton(display_text)
         button.setMinimumHeight(40)
@@ -85,9 +83,10 @@ class FavBar(QWidget):
         self.layout.addWidget(button)
         self.show()
 
-    # --- Chargement depuis JSON ---
     def load_favorites(self):
+        import json
         from utils import root_history
+
         favoris_path = root_history() / "favoris-bar" / "favoris.json"
         if not favoris_path.exists():
             return
@@ -109,8 +108,8 @@ class FavBar(QWidget):
         if self.layout.count() > 0:
             self.show()
 
-    # --- Suppression ---
     def remove_favorite(self, button):
+        from PySide6.QtWidgets import QMessageBox
         request = QMessageBox.question(
             self,
             "Supprimer le favori",
@@ -124,30 +123,35 @@ class FavBar(QWidget):
             if self.layout.count() == 0:
                 self.hide()
 
-    # --- Mise à jour JSON ---
     def update_favorites(self):
+        import json
+        from urllib.parse import urlparse
         from utils import root_history
+
         favoris_path = root_history() / "favoris-bar" / "favoris.json"
         favoris = []
         for i in range(self.layout.count()):
             item = self.layout.itemAt(i)
             widget = item.widget()
-            if isinstance(widget, QPushButton):
+            if hasattr(widget, "toolTip"):
                 url = widget.toolTip()
                 parsed = urlparse(url)
                 icon_url = f"{parsed.scheme}://{parsed.netloc}/favicon.ico"
                 favoris.append({
                     "url": url,
-                    "title": widget.title,
+                    "title": getattr(widget, "title", ""),
                     "icon": icon_url
                 })
         favoris_path.parent.mkdir(exist_ok=True)
         with open(favoris_path, "w", encoding="utf-8") as f:
             json.dump(favoris, f, ensure_ascii=False, indent=2)
 
-    # --- Téléchargement icône ---
     @staticmethod
     def icon_url(url):
+        import requests
+        from PySide6.QtGui import QPixmap, QIcon
+        from io import BytesIO
+
         try:
             response = requests.get(url, timeout=2)
             if response.status_code == 200:

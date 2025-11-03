@@ -1,19 +1,3 @@
-import json
-from datetime import datetime
-from urllib.parse import quote_plus
-# from interface.code import navigation
-from PySide6.QtCore import QUrl
-from pathlib import Path
-import sys , os
-from dotenv import load_dotenv
-load_dotenv
-# Gestion du chemin projet
-if getattr(sys, 'frozen', False):
-    base_path = Path(sys._MEIPASS)
-else:
-    base_path = Path(__file__).resolve().parent.parent.parent.parent
-
-
 class GestionNavigation:
     def __init__(self, tab_widget, url_search, history_file):
         self.tab_widget = tab_widget
@@ -25,6 +9,9 @@ class GestionNavigation:
 
     # -------------------------
     def load_history(self):
+        import json, os
+        from datetime import datetime
+
         if self.history_file.exists():
             with open(self.history_file, "r", encoding="utf-8") as f:
                 self.history_data = json.load(f)
@@ -43,12 +30,14 @@ class GestionNavigation:
 
     # -------------------------
     def persist(self):
+        import json, os
         self.history_file.parent.mkdir(parents=True, exist_ok=True)
         with open(self.history_file, "w", encoding="utf-8") as f:
             json.dump(self.history_data, f, ensure_ascii=False, indent=2)
 
     # -------------------------
     def add_entry(self, url, moteur, title):
+        from datetime import datetime
         self.history_data = self.history_data[:self.current_pos + 1]
         entry = {
             "moteur": moteur,
@@ -77,13 +66,18 @@ class GestionNavigation:
 
     # -------------------------
     def load_url(self, url):
+        from PySide6.QtCore import QUrl
         qurl = url if isinstance(url, QUrl) else QUrl(url)
         self.tab_widget.web_view.load(qurl)
         if self.url_search:
             self.url_search.setText(qurl.toString())
 
-    # # -------------------------
+    # -------------------------
     def research(self, choix):
+        import os
+        from PySide6.QtCore import QUrl
+        from urllib.parse import quote_plus
+
         choix = os.getenv(choix)
         query = self.url_search.text().strip()
         if query:
@@ -93,4 +87,4 @@ class GestionNavigation:
             self.load_url(url)
         else:
             url = QUrl(choix)
-            self.load_url(choix)
+            self.load_url(url)

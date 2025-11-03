@@ -41,8 +41,4 @@ Video player not supported – Possible codec-related issues.
 
 Google account login with autofill – Autofill does not work, probably due to JavaScript; manual input works.
 
-Back and Forward buttons misconfigured – Navigation backward and forward does not function correctly.
-
-Manga Scan – Unable to open certain links directly, such as reading the first or last chapter.
-
 Site https://www.u-campanile-corte.fr/ – CSS does not render correctly when resizing the page.
