@@ -34,8 +34,10 @@ and for compiled this application
 
 ## pyinstaller navigateur.spec
 
+==>
 
-## Known Issues
+## via nuikta ==> cd ByItsuki-navigateur after python -m nuitka --onefile --enable-plugin=pyside6 --windows-console-mode=disable --windows-icon-from-ico=interface/img/asset/icons/ByItsuki.ico --include-data-dir=interface=interface --include-data-dir=utils=utils --include-data-dir=configuration=configuration --output-filename="Navigateur-ByItsuki.exe" interface/page/principal/principal.py
+
 
 Video player not supported – Possible codec-related issues.
 

@@ -23,7 +23,7 @@ from utils.classe.gestion_navigation import GestionNavigation
 class CreateElements(QWidget):
 
     def __init__(self, parent, profile, title="Nouvel onglet",
-                 min_width=800, max_width=None, min_height=600, max_height=None):
+                    min_width=800, max_width=None, min_height=600, max_height=None):
         super().__init__(parent)
         self.parent = parent
         self.profile = profile
@@ -130,7 +130,7 @@ class CreateElements(QWidget):
 
     # -----------------------------
     def create_tab(self, parent, profile, title="Nouvel onglet",
-                   min_width=800, max_width=None, min_height=600, max_height=None):
+                    min_width=800, max_width=None, min_height=600, max_height=None):
         import os, json
         from datetime import datetime
         from PySide6.QtCore import QUrl
@@ -226,6 +226,7 @@ class CreateElements(QWidget):
 
         # --- Charger la page d’accueil ---
         self.web_view.load(QUrl(accueil_entry["url"]))
+
         layout.addWidget(self.web_view)
         if moteur == "BING":
             self.web_view.loadFinished.connect(self.inject_js_after_load)

@@ -16,7 +16,7 @@ def create_profile(parent=None, name="ByItsukiProfile"):
     if getattr(sys, "frozen", False):
         base = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
     else:
-        base = Path(__file__).resolve().parents[3] / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
+        base = Path(__file__).resolve().parents[3] / "configuration" / "data_navigation"
 
     base.mkdir(parents=True, exist_ok=True)
 
