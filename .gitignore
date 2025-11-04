@@ -60,3 +60,7 @@ ByItsuki-navigateur/configuration/data_navigation/
 
 
 # ===============================
+principal.build
+principal.dist
+principal.onefile-build
+Navigateur-ByItsuki.exe
