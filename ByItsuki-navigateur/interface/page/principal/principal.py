@@ -1,6 +1,10 @@
 import os
 import sys
 from pathlib import Path
+from PySide6.QtWidgets import (
+    QWidget, QApplication, QHBoxLayout, QVBoxLayout, QSizePolicy,
+    QTabWidget, QPushButton, QLineEdit, QComboBox
+)
 if getattr(sys, "frozen", False):
     project_root = Path(sys.executable).parent
 else:
@@ -8,51 +12,46 @@ else:
 
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-from PySide6.QtWebEngineCore import QWebEngineProfile
-from PySide6.QtWidgets import QWidget, QApplication, QHBoxLayout, QVBoxLayout, QSizePolicy, QTabWidget
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QUrl, QObject, Signal, QThread, QTimer
 from PySide6.QtGui import QIcon
-from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineProfile
 from interface.page.base_page import BasePage
-from utils import create_profile, CreateElements
+from utils import create_profile
 
+# Import de DropButton nécessaire
+from utils import DropButton
+
+# ----------------------------
+# Worker pour préparer les dossiers
+# ----------------------------
+class ProfileFolderPrep(QObject):
+    finished = Signal()
+
+    def run(self):
+        base_path = Path(os.getenv("LOCALAPPDATA", Path.home())) / "ByItsuki-Navigateur/configuration/data_navigation"
+        base_path.mkdir(parents=True, exist_ok=True)
+        (base_path / "cache").mkdir(parents=True, exist_ok=True)
+        (base_path / "storage").mkdir(parents=True, exist_ok=True)
+        self.finished.emit()
+
+# ----------------------------
+# Fenêtre principale
+# ----------------------------
 class Principal(BasePage):
-    def __init__(self, profile=None):
+    def __init__(self):
         super().__init__()
-        self._profile = profile
+        self._profile = None
         self._creator = None
         self.home_tab_initialized = False
-        self.init_interface()
 
-    # ------------------ Récupération du profil ------------------
-    @property
-    def profile(self):
-        if self._profile is None:
-            self._profile = self.recovery_profile()
-        return self._profile
-    def recovery_profile(self, profile=None):
-        if profile is not None:
-            return profile
-        base_path = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
-        if base_path.exists() and any(base_path.iterdir()):
-            profile = QWebEngineProfile("ByItsukiProfile")
-            profile.setCachePath(str(base_path / "cache"))
-            profile.setPersistentStoragePath(str(base_path / "storage"))
-            profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
-        else:
-            profile = create_profile(name="ByItsukiProfile")
-        return profile
+        # UI minimale immédiate
+        self.init_interface_minimale()
 
-    # -------- Création des éléments en lazy --------
-    @property
-    def creator(self):
-        if self._creator is None:
-            from utils import CreateElements  # import local si nécessaire
-            self._creator = CreateElements(self, self.profile)
-        return self._creator
+        # Préparation des dossiers sur un thread
+        self.init_folder_thread()
 
-    # ------------------ Interface ------------------
-    def init_interface(self):
+    # ------------------ Interface minimale ------------------
+    def init_interface_minimale(self):
         from utils import root_icon
         from PySide6.QtCore import QSize
 
@@ -61,41 +60,62 @@ class Principal(BasePage):
 
         # ---- Barre d'adresse ----
         address_layout = QHBoxLayout()
-        self.button_back = self.creator.create_button("←", self.back, min_width=40, max_height=40)
-        self.button_forward = self.creator.create_button("→", self.forward, min_width=40, max_height=40)
-        self.reload_button = self.creator.create_button("⟳", self.reload, min_width=40, max_height=40)
-        self.start = self.creator.create_button("🏠", self.go_home, min_width=40, max_height=40)
-        self.choice_moteur = self.creator.create_select(
-            ["Google", "Bing", "DuckDuckGo", "Qwant"], 0, min_width=50, max_width=100
-        )
-        self.url_search = self.creator.create_input("Barre de recherche...", self.search, min_width=500, max_height=40)
-        self.drop_button = self.creator.drop_button(self.url_search)
-        self.search_button = self.creator.create_button("🔍", self.search, min_width=40, max_height=40)
-        self.open_button = self.creator.create_button("+", self.new_tab, min_width=40, max_height=40)
-        self.parameter_menu_button = self.creator.create_button("", self.menu_parametre, min_width=40, max_height=40)
 
-        # Icônes
-        icon_file = root_icon("drop_icon.png")
-        self.drop_button.setIcon(QIcon(str(icon_file)))
-        self.drop_button.setIconSize(QSize(35, 35))
-        icon_file = root_icon("menu_icon.png")
-        self.parameter_menu_button.setIcon(QIcon(str(icon_file)))
-        self.parameter_menu_button.setIconSize(QSize(35, 35))
+        # boutons légers, non interactifs
+        self.button_back = QPushButton("←")
+        self.button_forward = QPushButton("→")
+        self.reload_button = QPushButton("⟳")
+        self.start = QPushButton("🏠")
+        self.choice_moteur = QComboBox()
+        self.choice_moteur.addItems(["Google", "Bing", "DuckDuckGo", "Qwant"])
+        self.url_search = QLineEdit("Barre de recherche...")
+        self.url_search.setEnabled(False)
 
-        for widget in [
+        # CHANGEMENT CLÉ : Remplacement de QPushButton par DropButton
+        # On passe self.url_search au constructeur pour que DropButton sache quelle URL glisser
+        # et on le désactive par défaut comme avant.
+        self.drop_button = DropButton(line_edit=self.url_search, parent=self)
+        self.drop_button.setText("⋯") # Remet le texte ou l'icône par défaut
+        self.drop_button.setEnabled(False)
+
+        self.search_button = QPushButton("🔍")
+        self.search_button.setEnabled(False)
+        self.open_button = QPushButton("+")
+        self.open_button.setEnabled(False)
+        self.parameter_menu_button = QPushButton("")
+        self.parameter_menu_button.setEnabled(False)
+
+        # icônes
+        try:
+            icon_file = root_icon("drop_icon.png")
+            # Le DropButton est instancié sans icône pour utiliser le texte,
+            # mais on peut forcer l'icône ici si le fichier est prêt.
+            self.drop_button.setIcon(QIcon(str(icon_file)))
+            self.drop_button.setIconSize(QSize(15, 15))
+            # On retire le texte du DropButton s'il a une icône
+            self.drop_button.setText("")
+
+            icon_file = root_icon("menu_icon.png")
+            self.parameter_menu_button.setIcon(QIcon(str(icon_file)))
+            self.parameter_menu_button.setIconSize(QSize(15, 15))
+        except Exception:
+            pass
+
+        # ajouter widgets au layout
+        for w in [
             self.button_back, self.button_forward, self.reload_button, self.start,
-            self.choice_moteur, self.drop_button, self.url_search,
+            self.choice_moteur, self.drop_button, self.url_search, # DropButton est maintenant l'instance DropButton
             self.search_button, self.open_button, self.parameter_menu_button
         ]:
-            address_layout.addWidget(widget)
+            address_layout.addWidget(w)
         self.content_layout.addLayout(address_layout)
 
-        # ---- Barre de favoris ----
+        # ---- Barre de favoris placeholder ----
         self.fav_content = QHBoxLayout()
         self.fav_content.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.favorite_bar = self.creator.fav_bar(parent=self, slot=self.open_favorite, min_height=40, max_height=40)
-        self.favorite_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.fav_content.addWidget(self.favorite_bar)
+        self.favorite_placeholder = QWidget()
+        self.favorite_placeholder.setMinimumHeight(40)
+        self.fav_content.addWidget(self.favorite_placeholder)
         self.content_layout.addLayout(self.fav_content)
 
         # ---- Onglets ----
@@ -107,25 +127,90 @@ class Principal(BasePage):
         self.onglet_layout.addWidget(self.tab)
         self.content_layout.addLayout(self.onglet_layout)
 
-        # Onglet initial vide pour lazy load
+        # Onglet Accueil lazy
         self.home_tab = QWidget()
+        self.home_tab.lazy_init = True
         self.tab.addTab(self.home_tab, "Accueil")
         self.tab.setCurrentWidget(self.home_tab)
 
-    # ------------------ Lazy load des onglets ------------------
-    def on_tab_changed(self, index):
-        tab = self.tab.widget(index)
-        if tab == self.home_tab and not self.home_tab_initialized:
-            # Création réelle de l'onglet Accueil
-            new_tab = self.creator.create_tab(self, self.profile, title="Accueil")
-            self.tab.removeTab(index)
-            self.tab.insertTab(index, new_tab, "Accueil")
-            self.tab.setCurrentIndex(index)
+    # ------------------ Thread dossiers ------------------
+    def init_folder_thread(self):
+        self._thread = QThread()
+        self._worker = ProfileFolderPrep()
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self.on_folders_ready)
+        self._worker.finished.connect(self._thread.quit)
+        self._thread.finished.connect(self._thread.deleteLater)
+        self._thread.start()
+
+    # ------------------ Quand dossiers prêts ------------------
+    def on_folders_ready(self):
+        # créer le profil dans le thread principal
+        base_path = Path(os.getenv("LOCALAPPDATA", Path.home())) / "ByItsuki-Navigateur/configuration/data_navigation"
+        if any(base_path.iterdir()):
+            self._profile = QWebEngineProfile("ByItsukiProfile")
+            self._profile.setCachePath(str(base_path / "cache"))
+            self._profile.setPersistentStoragePath(str(base_path / "storage"))
+            self._profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+        else:
+            self._profile = create_profile(name="ByItsukiProfile")
+
+        # création de _creator après 50 ms pour laisser l'UI se rendre
+        QTimer.singleShot(50, self.init_creator)
+
+    # ------------------ Initialisation _creator et activation UI ------------------
+    def init_creator(self):
+        from utils import CreateElements
+        self._creator = CreateElements(self, self._profile)
+
+        # remplacer l'onglet lazy par onglet réel
+        if self.home_tab.lazy_init:
+            new_tab = self._creator.create_tab(self, self._profile, title="Accueil")
+            self.tab.removeTab(self.tab.indexOf(self.home_tab))
+            self.tab.insertTab(0, new_tab, "Accueil")
+            self.tab.setCurrentIndex(0)
             self.home_tab = new_tab
             self.home_tab_initialized = True
-        elif hasattr(tab, "lazy_init") and tab.lazy_init:
-            # Nouvel onglet créé à la volée
-            new_tab = self.creator.create_tab(self, self.profile, title="Nouvel onglet")
+
+        # remplacer placeholder barre de favoris
+        self.fav_content.removeWidget(self.favorite_placeholder)
+        self.favorite_bar = self._creator.fav_bar(parent=self, slot=self.open_favorite, min_height=40, max_height=40)
+        self.favorite_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.fav_content.addWidget(self.favorite_bar)
+        self.favorite_placeholder.deleteLater()
+
+        # Lier la barre de favoris au DropButton pour que le Drag & Drop fonctionne
+        # L'instance favorite_bar est maintenant accessible
+        self.drop_button.parent = self # DropButton doit trouver self.favorite_bar dans son parent
+
+        # activer tous les widgets et connecter slots
+        for w, slot in [
+            (self.button_back, self.back),
+            (self.button_forward, self.forward),
+            (self.reload_button, self.reload),
+            (self.start, self.go_home),
+            (self.choice_moteur, None),
+            (self.url_search, self.search),
+            (self.drop_button, None),
+            (self.search_button, self.search),
+            (self.open_button, self.new_tab),
+            (self.parameter_menu_button, self.menu_parametre)
+        ]:
+            w.setEnabled(True)
+            if slot:
+                if hasattr(w, "clicked"):
+                    w.clicked.connect(slot)
+                elif hasattr(w, "returnPressed"):
+                    w.returnPressed.connect(slot)
+
+    # ------------------ Lazy tab changed ------------------
+    def on_tab_changed(self, index):
+        if not self._creator:
+            return
+        tab = self.tab.widget(index)
+        if hasattr(tab, "lazy_init") and tab.lazy_init:
+            new_tab = self._creator.create_tab(self, self._profile, title="Nouvel onglet")
             self.tab.removeTab(index)
             self.tab.insertTab(index, new_tab, "Nouvel onglet")
             self.tab.setCurrentIndex(index)
@@ -159,6 +244,8 @@ class Principal(BasePage):
             tab.history_manager.research(moteur)
 
     def new_tab(self):
+        if not self._creator:
+            return
         tab = QWidget()
         tab.lazy_init = True
         index = self.tab.addTab(tab, "Nouvel onglet")
@@ -179,13 +266,15 @@ class Principal(BasePage):
         if hasattr(tab, "web_view"):
             tab.web_view.load(QUrl(url))
 
-
+    def closeEvent(self, event):
+        while self.tab.count() > 0:
+            self.close_tab(0)
+        event.accept()
+# ----------------------------
+# Lancement
+# ----------------------------
 if __name__ == "__main__":
-    from PySide6.QtWidgets import QApplication
-    from interface.page.principal.principal import Principal
-
     app = QApplication(sys.argv)
-    main_window = Principal(profile=None)
+    main_window = Principal()
     main_window.show()
-
     sys.exit(app.exec())
