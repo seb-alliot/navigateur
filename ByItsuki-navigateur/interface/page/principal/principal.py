@@ -1,4 +1,23 @@
 import os
+import subprocess
+
+def is_intel_igpu():
+    try:
+        output = subprocess.check_output("wmic path win32_videocontroller get name", shell=True, text=True)
+        return "intel" in output.lower()
+    except Exception:
+        return False
+
+if is_intel_igpu():
+    # ✅ Désactive l'accélération GPU pour les systèmes à iGPU Intel
+    os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu --disable-software-rasterizer"
+    print("[Navigateur] iGPU détecté — Accélération GPU désactivée pour un démarrage plus rapide.")
+else:
+    # Optionnel : tu peux aussi désactiver le GPU manuellement ici si besoin
+    # os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu"
+    pass
+
+
 import sys
 from pathlib import Path
 from PySide6.QtWidgets import (
@@ -153,6 +172,14 @@ class Principal(BasePage):
             self._profile.setCachePath(str(base_path / "cache"))
             self._profile.setPersistentStoragePath(str(base_path / "storage"))
             self._profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
+            self._profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+            self._profile.setHttpAcceptLanguage("fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7")
+            self._profile.setHttpUserAgent(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/129.0.0.0 Safari/537.36 "
+                "ByItsuki-Navigateur/1.0"
+            )
         else:
             self._profile = create_profile(name="ByItsukiProfile")
 
@@ -180,9 +207,7 @@ class Principal(BasePage):
         self.fav_content.addWidget(self.favorite_bar)
         self.favorite_placeholder.deleteLater()
 
-        # Lier la barre de favoris au DropButton pour que le Drag & Drop fonctionne
-        # L'instance favorite_bar est maintenant accessible
-        self.drop_button.parent = self # DropButton doit trouver self.favorite_bar dans son parent
+        self.drop_button.parent = self
 
         # activer tous les widgets et connecter slots
         for w, slot in [
@@ -270,9 +295,8 @@ class Principal(BasePage):
         while self.tab.count() > 0:
             self.close_tab(0)
         event.accept()
-# ----------------------------
-# Lancement
-# ----------------------------
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     main_window = Principal()
