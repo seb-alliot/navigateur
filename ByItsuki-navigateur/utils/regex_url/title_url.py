@@ -28,7 +28,6 @@ def site_name(web_view_title: str, moteur=None) -> str:
     suffixes = (
         " - Recherche Google", " - Google Search", " - Bing",
         " at DuckDuckGo", " – Recherche Qwant", " - Recherche",
-        " | YouTube", " - YouTube", " | LinkedIn", " - LinkedIn"
     )
 
     clean_title = web_view_title

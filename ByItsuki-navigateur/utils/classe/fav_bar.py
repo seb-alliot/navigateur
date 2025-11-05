@@ -1,4 +1,6 @@
 from PySide6.QtWidgets import QWidget
+import os, json
+from pathlib import Path
 
 class FavBar(QWidget):
     def __init__(self, parent=None, slot=None, icon=None, title=None, min_height=40, max_height=40, tool_tip=""):
@@ -84,10 +86,7 @@ class FavBar(QWidget):
         self.show()
 
     def load_favorites(self):
-        import json
-        from utils import root_history
-
-        favoris_path = root_history() / "favoris-bar" / "favoris.json"
+        favoris_path = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation" / "storage" / "historique" / "favoris-bar" / "favoris.json"
         if not favoris_path.exists():
             return
         try:
@@ -96,6 +95,7 @@ class FavBar(QWidget):
         except json.JSONDecodeError:
             print("[FavBar] JSON mal formé, ignoré.")
             return
+
 
         for fav in favoris:
             url = fav.get("url", "")
@@ -124,11 +124,10 @@ class FavBar(QWidget):
                 self.hide()
 
     def update_favorites(self):
-        import json
         from urllib.parse import urlparse
-        from utils import root_history
-
-        favoris_path = root_history() / "favoris-bar" / "favoris.json"
+        favoris_path = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation" / "storage" / "historique" / "favoris-bar" / "favoris.json"
+        if not favoris_path.parent.exists():
+            favoris_path.parent.mkdir(parents=True, exist_ok=True)
         favoris = []
         for i in range(self.layout.count()):
             item = self.layout.itemAt(i)
