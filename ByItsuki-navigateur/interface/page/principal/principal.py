@@ -1,5 +1,7 @@
 import os
 import subprocess
+# Détection iGPU Intel sous Windows
+# Accelération du demarrage sur ordi avec iGPU Intel
 
 def is_intel_igpu():
     try:
@@ -9,14 +11,10 @@ def is_intel_igpu():
         return False
 
 if is_intel_igpu():
-    # ✅ Désactive l'accélération GPU pour les systèmes à iGPU Intel
+    # Désactive l'igpu et refourgue le taff au cpu
     os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu --disable-software-rasterizer"
-    print("[Navigateur] iGPU détecté — Accélération GPU désactivée pour un démarrage plus rapide.")
 else:
-    # Optionnel : tu peux aussi désactiver le GPU manuellement ici si besoin
-    # os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu"
     pass
-
 
 import sys
 from pathlib import Path
@@ -64,13 +62,13 @@ class Principal(BasePage):
         self.home_tab_initialized = False
 
         # UI minimale immédiate
-        self.init_interface_minimale()
+        self.init_interface()
 
         # Préparation des dossiers sur un thread
-        self.init_folder_thread()
+        self.init_profile()
 
     # ------------------ Interface minimale ------------------
-    def init_interface_minimale(self):
+    def init_interface(self):
         from utils import root_icon
         from PySide6.QtCore import QSize
 
@@ -90,11 +88,8 @@ class Principal(BasePage):
         self.url_search = QLineEdit("Barre de recherche...")
         self.url_search.setEnabled(False)
 
-        # CHANGEMENT CLÉ : Remplacement de QPushButton par DropButton
-        # On passe self.url_search au constructeur pour que DropButton sache quelle URL glisser
-        # et on le désactive par défaut comme avant.
         self.drop_button = DropButton(line_edit=self.url_search, parent=self)
-        self.drop_button.setText("⋯") # Remet le texte ou l'icône par défaut
+        self.drop_button.setText("⋯")
         self.drop_button.setEnabled(False)
 
         self.search_button = QPushButton("🔍")
@@ -111,7 +106,6 @@ class Principal(BasePage):
             # mais on peut forcer l'icône ici si le fichier est prêt.
             self.drop_button.setIcon(QIcon(str(icon_file)))
             self.drop_button.setIconSize(QSize(15, 15))
-            # On retire le texte du DropButton s'il a une icône
             self.drop_button.setText("")
 
             icon_file = root_icon("menu_icon.png")
@@ -123,7 +117,7 @@ class Principal(BasePage):
         # ajouter widgets au layout
         for w in [
             self.button_back, self.button_forward, self.reload_button, self.start,
-            self.choice_moteur, self.drop_button, self.url_search, # DropButton est maintenant l'instance DropButton
+            self.choice_moteur, self.drop_button, self.url_search,
             self.search_button, self.open_button, self.parameter_menu_button
         ]:
             address_layout.addWidget(w)
@@ -153,37 +147,20 @@ class Principal(BasePage):
         self.tab.setCurrentWidget(self.home_tab)
 
     # ------------------ Thread dossiers ------------------
-    def init_folder_thread(self):
+    def init_profile(self):
         self._thread = QThread()
         self._worker = ProfileFolderPrep()
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
-        self._worker.finished.connect(self.on_folders_ready)
+        self._worker.finished.connect(self.profil_ready)
         self._worker.finished.connect(self._thread.quit)
         self._thread.finished.connect(self._thread.deleteLater)
         self._thread.start()
 
-    # ------------------ Quand dossiers prêts ------------------
-    def on_folders_ready(self):
-        # créer le profil dans le thread principal
-        base_path = Path(os.getenv("LOCALAPPDATA", Path.home())) / "ByItsuki-Navigateur/configuration/data_navigation"
-        if any(base_path.iterdir()):
-            self._profile = QWebEngineProfile("ByItsukiProfile")
-            self._profile.setCachePath(str(base_path / "cache"))
-            self._profile.setPersistentStoragePath(str(base_path / "storage"))
-            self._profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
-            self._profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
-            self._profile.setHttpAcceptLanguage("fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7")
-            self._profile.setHttpUserAgent(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/129.0.0.0 Safari/537.36 "
-                "ByItsuki-Navigateur/1.0"
-            )
-        else:
-            self._profile = create_profile(name="ByItsukiProfile")
-
-        # création de _creator après 50 ms pour laisser l'UI se rendre
+    # ------------------ Quand le profil est prêt ------------------
+    def profil_ready(self):
+        # créer ou récupérer le profil complet
+        self._profile = create_profile(name="ByItsukiProfile")
         QTimer.singleShot(50, self.init_creator)
 
     # ------------------ Initialisation _creator et activation UI ------------------

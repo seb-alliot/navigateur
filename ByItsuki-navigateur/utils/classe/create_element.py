@@ -125,12 +125,13 @@ class CreateElements(QWidget):
 
     # -----------------------------
     def create_tab(self, parent, profile, title="Nouvel onglet",
-                   min_width=800, max_width=None, min_height=600, max_height=None):
+               min_width=800, max_width=None, min_height=600, max_height=None):
         import os, json
         from datetime import datetime
         from PySide6.QtCore import QUrl
         from PySide6.QtWidgets import QVBoxLayout
 
+        # --- Gestion de l'historique ---
         history_root = root_history()
         history_general = history_root / "general"
         history_general.mkdir(parents=True, exist_ok=True)
@@ -152,44 +153,43 @@ class CreateElements(QWidget):
         with open(history_file, "w", encoding="utf-8") as f:
             json.dump([accueil_entry], f, ensure_ascii=False, indent=2)
 
+        # --- Création de l'onglet ---
         tab_widget = QWidget()
         layout = QVBoxLayout(tab_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        self.web_view = QWebEngineView()
-        self.page = SilentWebEnginePage(profile, self.web_view)
-        self.web_view.setPage(self.page)
-        self.web_view.setHtml(base_style())
+        web_view = QWebEngineView()
+        page = SilentWebEnginePage(profile, web_view)
+        web_view.setPage(page)
+        web_view.setHtml(base_style())
 
+        # --- Attributs de l'onglet ---
         tab_widget.title = title
         tab_widget.profile = profile
-        tab_widget.web_view = self.web_view
+        tab_widget.web_view = web_view
         tab_widget.history_root = tab_folder
         tab_widget.history_file = history_file
-        tab_widget.history_manager = GestionNavigation(tab_widget, parent.url_search, tab_widget.history_file)
+        tab_widget.history_manager = GestionNavigation(tab_widget, parent.url_search, history_file)
         tab_widget.current_pos = 0
-        tab_widget.page = self.page
+        tab_widget.page = page
         tab_widget.tab_index = tab_index
 
-        # --- WebChannel ---
-        self.channel = QWebChannel()
-        self.js_handler = JSHandler()
-        self.channel.registerObject("qt_object", self.js_handler)
-        self.page.setWebChannel(self.channel)
-        self.js_handler.linkClickedSignal.connect(self.on_js_link_clicked)
+        # --- WebChannel pour JS ---
+        channel = QWebChannel()
+        js_handler = JSHandler()
+        channel.registerObject("qt_object", js_handler)
+        page.setWebChannel(channel)
 
         def on_link_clicked(url):
-            moteur = parent.choice_moteur.currentText().upper()
-            data = click_link(url, tab_index, self.web_view.title(), moteur, history_general, tab_widget.current_pos)
+            data = click_link(url, tab_index, web_view.title(), moteur, history_general, tab_widget.current_pos)
             if data:
                 tab_widget.current_pos = data["current_pos"]
                 tab_widget.history_tab = data["history_tab"]
                 tab_widget.history_manager.add_entry(data["url"], data["moteur"], data["title"])
 
-        self.page.linkClickedSignal.connect(on_link_clicked)
-        self.js_handler.linkClickedSignal.connect(on_link_clicked)
-        tab_widget.on_link_clicked = on_link_clicked
+        page.linkClickedSignal.connect(on_link_clicked)
+        js_handler.linkClickedSignal.connect(on_link_clicked)
 
         # --- Icône et URL ---
         def update_tab_icon(icon):
@@ -201,61 +201,70 @@ class CreateElements(QWidget):
             if hasattr(parent, "url_search"):
                 parent.url_search.setText(url.toString())
 
-        self.web_view.iconChanged.connect(update_tab_icon)
-        self.web_view.urlChanged.connect(update_url)
-        self.web_view.load(QUrl(accueil_entry["url"]))
-        layout.addWidget(self.web_view)
+        web_view.iconChanged.connect(update_tab_icon)
+        web_view.urlChanged.connect(update_url)
+        web_view.load(QUrl(accueil_entry["url"]))
+        layout.addWidget(web_view)
 
+        # --- Plein écran ---
+        def handle_fullscreen(request, view: QWebEngineView):
+            if request.toggleOn():
+                view.window().showFullScreen()
+            else:
+                view.window().showNormal()
+            request.accept()
+
+        page.fullScreenRequested.connect(lambda request: handle_fullscreen(request, web_view))
+
+        # --- Injection JS pour Bing ---
         if moteur == "BING":
-            self.web_view.loadFinished.connect(self.inject_js_after_load)
+            def inject_js_after_load(ok):
+                if not ok:
+                    return
+                web_view.page().runJavaScript("""
+                var s=document.createElement('script');
+                s.src='qrc:///qtwebchannel/qwebchannel.js';
+                document.head.appendChild(s);
+                """)
+                js_code = """
+                setTimeout(function(){
+                    (function(){
+                        function setup(){
+                            if(typeof qt==='undefined'||!qt.webChannelTransport){
+                                setTimeout(setup,500);
+                                return;
+                            }
+                            new QWebChannel(qt.webChannelTransport,function(channel){
+                                const qt_object=channel.objects.qt_object;
+                                function attach(a){
+                                    a.addEventListener('click',function(e){
+                                        e.preventDefault();
+                                        qt_object.linkClicked(this.href);
+                                    });
+                                }
+                                document.querySelectorAll('a').forEach(attach);
+                                const obs=new MutationObserver(m=>{
+                                    m.forEach(x=>{
+                                        x.addedNodes.forEach(n=>{
+                                            if(n.tagName==='A') attach(n);
+                                            else if(n.querySelectorAll)
+                                                n.querySelectorAll('a').forEach(attach);
+                                        });
+                                    });
+                                });
+                                obs.observe(document.body,{childList:true,subtree:true});
+                            });
+                        }
+                        setup();
+                    })();
+                },800);
+                """
+                web_view.page().runJavaScript(js_code)
+
+            web_view.loadFinished.connect(inject_js_after_load)
 
         return tab_widget
 
-    # -----------------------------
-    def inject_js_after_load(self, ok):
-        if not ok:
-            return
-        self.web_view.page().runJavaScript("""
-        var s=document.createElement('script');
-        s.src='qrc:///qtwebchannel/qwebchannel.js';
-        document.head.appendChild(s);
-        """)
-        js_code = """
-        setTimeout(function(){
-            (function(){
-                function setup(){
-                    if(typeof qt==='undefined'||!qt.webChannelTransport){
-                        console.log("WebChannel not ready, retrying...");
-                        setTimeout(setup,500);
-                        return;
-                    }
-                    new QWebChannel(qt.webChannelTransport,function(channel){
-                        const qt_object=channel.objects.qt_object;
-                        function attach(a){
-                            a.addEventListener('click',function(e){
-                                e.preventDefault();
-                                qt_object.linkClicked(this.href);
-                            });
-                        }
-                        document.querySelectorAll('a').forEach(attach);
-                        const obs=new MutationObserver(m=>{
-                            m.forEach(x=>{
-                                x.addedNodes.forEach(n=>{
-                                    if(n.tagName==='A')attach(n);
-                                    else if(n.querySelectorAll)
-                                        n.querySelectorAll('a').forEach(attach);
-                                });
-                            });
-                        });
-                        obs.observe(document.body,{childList:true,subtree:true});
-                        console.log("qt_object connected and listeners active");
-                    });
-                }
-                setup();
-            })();
-        },800);
-        """
-        self.web_view.page().runJavaScript(js_code)
 
     # -----------------------------
     def on_js_link_clicked(self, url):

@@ -14,17 +14,22 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
 
 def create_profile(parent=None, name="ByItsukiProfile"):
     if getattr(sys, "frozen", False):
-        base = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
+        base_path = Path(os.getenv("LOCALAPPDATA")) / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
     else:
-        base = Path(__file__).resolve().parents[3]  / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
+        base_path = Path(__file__).resolve().parents[3] / "ByItsuki-Navigateur" / "configuration" / "data_navigation"
 
-    base.mkdir(parents=True, exist_ok=True)
+    # Créer les dossiers si nécessaire
+    base_path.mkdir(parents=True, exist_ok=True)
+    cache_path = base_path / "cache"
+    storage_path = base_path / "storage"
+    cache_path.mkdir(exist_ok=True)
+    storage_path.mkdir(exist_ok=True)
 
-    # Création du profil
+    # Créer le profil
     profile = QWebEngineProfile(name, parent)
+    profile.setCachePath(str(cache_path))
+    profile.setPersistentStoragePath(str(storage_path))
     profile.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
-    profile.setCachePath(str(base / "cache"))
-    profile.setPersistentStoragePath(str(base / "storage"))
     profile.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.ForcePersistentCookies)
 
     # Paramètres WebEngine
@@ -40,7 +45,6 @@ def create_profile(parent=None, name="ByItsukiProfile"):
     settings.setAttribute(QWebEngineSettings.JavascriptCanOpenWindows, True)
     settings.setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
 
-
     # Headers & user-agent
     profile.setHttpAcceptLanguage("fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7")
     profile.setHttpUserAgent(
@@ -49,5 +53,5 @@ def create_profile(parent=None, name="ByItsukiProfile"):
         "Chrome/129.0.0.0 Safari/537.36 "
         "ByItsuki-Navigateur/1.0"
     )
-    
+
     return profile
