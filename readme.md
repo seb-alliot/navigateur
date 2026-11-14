@@ -2,10 +2,10 @@
 
 ## Useful links:
 
-## python ==> https://www.python.org/downloads/
-## PySid6 ==> https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/index.html
-## trello ==> https://trello.com/invite/b/68ff227bb886545dbb60d6f7/ATTI2b2f3b86624d3ffd359c1ab95d13b7f98E33DA0E/navigateur
-## github ==> https://github.com/seb-alliot/navigateur.git
+## python ==> [python](https://www.python.org/downloads/)
+## PySid6 ==> [Pyside](https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/index.html)
+## trello ==> [trello](https://trello.com/invite/b/68ff227bb886545dbb60d6f7/ATTI2b2f3b86624d3ffd359c1ab95d13b7f98E33DA0E/navigateur)
+## github ==> [github](https://github.com/seb-alliot/navigateur.git)
 
 ## Technologies: Python 3.13, PySide6
 
