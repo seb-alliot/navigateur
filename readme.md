@@ -1,6 +1,3 @@
-Voici une version proprement remaniée **uniquement au niveau de la mise en page** (structure Markdown, titres, listes, blocs de code, liens). Le contenu textuel est resté fidèle à l’original.
-
-```markdown
 # Web Browser (Under Development)
 
 ## Useful links
@@ -53,5 +50,3 @@ cd ByItsuki-navigateur
 python -m nuitka --onefile --enable-plugin=pyside6 --windows-console-mode=disable --windows-icon-from-ico=interface/img/asset/icons/ByItsuki.ico --include-data-dir=interface=interface --include-data-dir=utils=utils --include-data-dir=configuration=configuration --output-filename="Navigateur-ByItsuki.exe" interface/page/principal/principal.py
 ```
 ```
-
-Tu veux que je te génère le fichier `README.md` directement, ou tu préfères ajuster quelque chose dans cette mise en page ?
