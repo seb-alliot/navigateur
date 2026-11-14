@@ -37,10 +37,3 @@ and for compiled this application
 ==>
 
 ## via nuikta ==> cd ByItsuki-navigateur after python -m nuitka --onefile --enable-plugin=pyside6 --windows-console-mode=disable --windows-icon-from-ico=interface/img/asset/icons/ByItsuki.ico --include-data-dir=interface=interface --include-data-dir=utils=utils --include-data-dir=configuration=configuration --output-filename="Navigateur-ByItsuki.exe" interface/page/principal/principal.py
-
-
-Video player not supported – Possible codec-related issues.
-
-Google account login with autofill – Autofill does not work, probably due to JavaScript; manual input works.
-
-Site https://www.u-campanile-corte.fr/ – CSS does not render correctly when resizing the page.
